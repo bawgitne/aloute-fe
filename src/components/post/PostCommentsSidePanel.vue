@@ -15,8 +15,10 @@
     <div class="post-snippet-box">
       <div class="snippet-author">
         <img :src="post.user.avatar" class="avatar avatar-sm" />
-        <strong>{{ post.user.name }}</strong>
-        <small>@{{ post.user.username }}</small>
+        <div>
+          <strong>{{ post.user.name }}</strong>
+          <small class="user-handle">@{{ post.user.username }} • {{ post.created_at }}</small>
+        </div>
       </div>
       <p class="snippet-text">{{ post.content }}</p>
     </div>
@@ -115,7 +117,9 @@ function toggleReplyLike(reply) {
   flex-direction: column;
   height: calc(100vh - var(--header-height) - 40px);
   position: sticky;
-  top: calc(var(--header-height) + 20px);
+  top: 0;
+  margin-top: 0;
+  margin-bottom: 0;
   padding: 16px;
   overflow: hidden;
 }
@@ -148,15 +152,16 @@ function toggleReplyLike(reply) {
 .snippet-author {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .snippet-author strong {
   font-size: 12px;
+  display: block;
 }
 
-.snippet-author small {
+.user-handle {
   color: var(--text-muted);
   font-size: 11px;
 }
@@ -168,8 +173,8 @@ function toggleReplyLike(reply) {
 }
 
 .composer-box {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border-color);
 }
 

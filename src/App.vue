@@ -14,9 +14,6 @@
           <component :is="currentViewComponent" />
         </KeepAlive>
       </section>
-
-      <!-- Right Sidebar Widgets -->
-      <SidebarRight v-if="showRightSidebar" />
     </main>
 
     <!-- Global Floating Modals & Drawers -->
@@ -32,7 +29,6 @@ import { computed } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 import Header from '@/components/layout/Header.vue'
 import SidebarLeft from '@/components/layout/SidebarLeft.vue'
-import SidebarRight from '@/components/layout/SidebarRight.vue'
 import HomeView from '@/views/HomeView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import CommunitiesView from '@/views/CommunitiesView.vue'
@@ -62,9 +58,5 @@ const currentViewComponent = computed(() => {
     case 'analytics': return AnalyticsView
     default: return HomeView
   }
-})
-
-const showRightSidebar = computed(() => {
-  return ['feed', 'profile', 'notifications'].includes(activeTab.value)
 })
 </script>

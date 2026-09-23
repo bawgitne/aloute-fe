@@ -80,7 +80,7 @@
         <template v-for="(post, index) in filteredPosts" :key="post.id">
           <PostCard :post="post" />
 
-          <!-- Inline Suggested People to Follow Card (Random Suggestion Card embedded in Feed) -->
+          <!-- Inline Suggested People to Follow Card -->
           <div
             v-if="index === 0 && recommendedUsers.length"
             class="card-social inline-recommendation-card"
@@ -121,7 +121,7 @@
       </div>
     </div>
 
-    <!-- Right Comments / Discussion Side-Panel Column -->
+    <!-- Right Comments / Discussion Side-Panel Column (Top Aligned evenly with feed) -->
     <div class="comments-column">
       <PostCommentsSidePanel :post="selectedPostForComments" />
     </div>
@@ -186,6 +186,7 @@ function openProfile(usr) {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  position: relative;
 }
 
 .feed-stream-column {
@@ -194,8 +195,10 @@ function openProfile(usr) {
 }
 
 .comments-column {
-  width: 340px;
+  width: 380px;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
 }
 
 .story-bar {
@@ -315,7 +318,6 @@ function openProfile(usr) {
   background: var(--warning-color);
 }
 
-/* Inline Recommendation Card */
 .inline-recommendation-card {
   margin-bottom: 16px;
   padding: 14px;
