@@ -121,8 +121,11 @@
       </div>
     </div>
 
-    <!-- Right Comments / Discussion Side-Panel Column (Top Aligned evenly with feed) -->
-    <div class="comments-column">
+    <!-- Right Comments / Discussion Side-Panel Column (Positioned dynamically at current selected post height) -->
+    <div
+      class="comments-column"
+      :style="{ transform: `translateY(${selectedPostOffsetTop}px)`, transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }"
+    >
       <PostCommentsSidePanel :post="selectedPostForComments" />
     </div>
   </div>
@@ -143,6 +146,7 @@ const {
   activeTab,
   selectedProfileUser,
   selectedPostForComments,
+  selectedPostOffsetTop,
   isCreatePostModalOpen,
   followUser,
   unfollowUser
@@ -197,8 +201,7 @@ function openProfile(usr) {
 .comments-column {
   width: 380px;
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
+  will-change: transform;
 }
 
 .story-bar {

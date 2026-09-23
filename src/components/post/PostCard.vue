@@ -1,5 +1,6 @@
 <template>
   <article
+    ref="cardRef"
     class="card-social post-card"
     :class="{ 'active-comment-post': selectedPostForComments && selectedPostForComments.id === post.id }"
     v-if="!isPostHidden"
@@ -166,6 +167,7 @@ const {
   activeFeedFilter,
   selectedProfileUser,
   selectedPostForComments,
+  selectedPostOffsetTop,
   isCreatePostModalOpen,
   isReportModalOpen,
   reportTargetItem,
@@ -177,11 +179,23 @@ const {
   hidePost
 } = useThreadsStore()
 
+const cardRef = ref(null)
 const showMenu = ref(false)
 
 const isPostHidden = computed(() => moderation.hiddenPosts.includes(props.post.id))
 
 function selectPostForComments() {
+  if (cardRef.value) {
+    const parent = cardRef.value.closest('.home-view-layout')
+    if (parent) {
+      const cardRect = cardRef.value.getBoundingClientRect()
+      const parentRect = parent.getBoundingClientRect()
+      const topOffset = cardRect.top - parentRect.top
+      selectedPostOffsetTop.value = Math.max(0, topOffset)
+    } else {
+      selectedPostOffsetTop.value = cardRef.value.offsetTop || 0
+    }
+  }
   selectedPostForComments.value = props.post
 }
 
@@ -237,7 +251,7 @@ function openAnalytics() {
 
 .post-card.active-comment-post {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(80, 181, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(80, 181, 255, 0.25);
 }
 
 .post-header {

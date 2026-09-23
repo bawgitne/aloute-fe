@@ -410,12 +410,13 @@ const moderation = reactive({
 const showMiniProfileCard = ref(true)
 
 // Active State Navigation & UI Filters
-const activeTab = ref('feed') // 'feed', 'profile', 'communities', 'custom_feeds', 'messages', 'notifications', 'moderation', 'analytics', 'community_detail'
-const activeFeedFilter = ref('home') // 'home', 'following', 'feed_1', 'feed_2', 'topic_VueJS'
+const activeTab = ref('feed')
+const activeFeedFilter = ref('home')
 const selectedCommunity = ref(communities[0])
 const selectedConversation = ref(conversations[0])
 const selectedProfileUser = ref(currentUser)
 const selectedPostForComments = ref(posts[0]) // Selected post to show comments side-panel on right
+const selectedPostOffsetTop = ref(0) // Vertical offset of selected post card relative to feed container
 const isChatDrawerOpen = ref(false)
 const isCreatePostModalOpen = ref(false)
 const isReportModalOpen = ref(false)
@@ -472,6 +473,7 @@ function createPost(newPostData) {
   posts.unshift(newPost)
   currentUser.posts_count++
   selectedPostForComments.value = newPost
+  selectedPostOffsetTop.value = 0
 }
 
 function addReply(postId, replyContent) {
@@ -641,6 +643,7 @@ export function useThreadsStore() {
     selectedConversation,
     selectedProfileUser,
     selectedPostForComments,
+    selectedPostOffsetTop,
     isChatDrawerOpen,
     isCreatePostModalOpen,
     isReportModalOpen,
