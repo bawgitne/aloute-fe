@@ -1,7 +1,7 @@
 <template>
   <aside class="sidebar-left">
-    <!-- Mini User Profile Card -->
-    <div class="card-social profile-mini-card" @click="openProfile">
+    <!-- Option Show/Hide Mini Profile Card -->
+    <div v-if="showMiniProfileCard" class="card-social profile-mini-card" @click="openProfile">
       <div class="mini-card-header">
         <img :src="currentUser.cover" class="mini-cover" />
         <img :src="currentUser.avatar" class="avatar avatar-lg mini-avatar" />
@@ -31,85 +31,50 @@
       </div>
     </div>
 
-    <!-- Navigation Menu List -->
-    <div class="card-social menu-card">
-      <nav class="sidebar-menu">
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'feed' }"
-          @click="activeTab = 'feed'"
+    <!-- Moved Widget: Trending Topics -->
+    <div class="card-social widget-card">
+      <div class="widget-header">
+        <h3><i class="fa-solid fa-fire text-warning"></i> Trending Topics</h3>
+      </div>
+      <div class="widget-body">
+        <div
+          v-for="topic in topics"
+          :key="topic.id"
+          class="topic-item"
+          @click="selectTopic(topic.name)"
         >
-          <i class="fa-solid fa-newspaper menu-icon"></i>
-          <span class="menu-label">Home Feed</span>
-        </button>
+          <div class="topic-info">
+            <span class="topic-name">#{{ topic.name }}</span>
+            <small class="topic-meta">{{ topic.post_count }} threads today</small>
+          </div>
+          <i class="fa-solid fa-chevron-right chevron-icon"></i>
+        </div>
+      </div>
+    </div>
 
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'custom_feeds' }"
-          @click="activeTab = 'custom_feeds'"
+    <!-- New Widget: Your Joined Communities -->
+    <div class="card-social widget-card">
+      <div class="widget-header">
+        <h3><i class="fa-solid fa-users text-success"></i> Your Communities</h3>
+        <button class="btn-link" @click="activeTab = 'communities'">All</button>
+      </div>
+      <div class="widget-body">
+        <div
+          v-for="comm in joinedCommunities"
+          :key="comm.id"
+          class="community-item"
+          @click="openCommunity(comm)"
         >
-          <i class="fa-solid fa-sliders menu-icon"></i>
-          <span class="menu-label">Custom Feeds</span>
-          <span class="badge badge-primary">{{ customFeeds.length }}</span>
-        </button>
-
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'communities' }"
-          @click="activeTab = 'communities'"
-        >
-          <i class="fa-solid fa-users-rectangle menu-icon"></i>
-          <span class="menu-label">Communities</span>
-          <span class="badge badge-success">{{ communities.length }}</span>
-        </button>
-
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'messages' }"
-          @click="activeTab = 'messages'"
-        >
-          <i class="fa-solid fa-comments menu-icon"></i>
-          <span class="menu-label">Messages</span>
-          <span v-if="unreadMessagesCount" class="badge badge-danger">{{ unreadMessagesCount }}</span>
-        </button>
-
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'notifications' }"
-          @click="activeTab = 'notifications'"
-        >
-          <i class="fa-solid fa-bell menu-icon"></i>
-          <span class="menu-label">Notifications</span>
-          <span v-if="unreadNotifsCount" class="badge badge-warning">{{ unreadNotifsCount }}</span>
-        </button>
-
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'analytics' }"
-          @click="activeTab = 'analytics'"
-        >
-          <i class="fa-solid fa-chart-line menu-icon"></i>
-          <span class="menu-label">Post Analytics</span>
-        </button>
-
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'moderation' }"
-          @click="activeTab = 'moderation'"
-        >
-          <i class="fa-solid fa-shield-halved menu-icon"></i>
-          <span class="menu-label">Safety & Reports</span>
-        </button>
-
-        <button
-          class="menu-item"
-          :class="{ active: activeTab === 'profile' }"
-          @click="openProfile"
-        >
-          <i class="fa-solid fa-id-card menu-icon"></i>
-          <span class="menu-label">My Profile</span>
-        </button>
-      </nav>
+          <img :src="comm.avatar" class="avatar avatar-sm" />
+          <div class="community-info">
+            <strong>{{ comm.name }}</strong>
+            <small>c/{{ comm.slug }}</small>
+          </div>
+        </div>
+        <div v-if="!joinedCommunities.length" class="empty-small-text">
+          No joined communities yet.
+        </div>
+      </div>
     </div>
   </aside>
 </template>
@@ -120,20 +85,30 @@ import { useThreadsStore } from '@/composables/useThreadsStore'
 
 const {
   currentUser,
-  customFeeds,
+  topics,
   communities,
-  notifications,
-  conversations,
+  showMiniProfileCard,
   activeTab,
+  activeFeedFilter,
+  selectedCommunity,
   selectedProfileUser
 } = useThreadsStore()
 
-const unreadNotifsCount = computed(() => notifications.filter(n => !n.is_read).length)
-const unreadMessagesCount = computed(() => conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0))
+const joinedCommunities = computed(() => communities.filter(c => c.is_joined))
 
 function openProfile() {
   selectedProfileUser.value = currentUser
   activeTab.value = 'profile'
+}
+
+function selectTopic(name) {
+  activeFeedFilter.value = `topic_${name}`
+  activeTab.value = 'feed'
+}
+
+function openCommunity(comm) {
+  selectedCommunity.value = comm
+  activeTab.value = 'community_detail'
 }
 </script>
 
@@ -154,7 +129,7 @@ function openProfile() {
 
 .mini-card-header {
   position: relative;
-  height: 70px;
+  height: 65px;
 }
 
 .mini-cover {
@@ -165,7 +140,7 @@ function openProfile() {
 
 .mini-avatar {
   position: absolute;
-  bottom: -24px;
+  bottom: -22px;
   left: 50%;
   transform: translateX(-50%);
   border: 3px solid var(--bg-surface);
@@ -173,12 +148,12 @@ function openProfile() {
 }
 
 .mini-card-body {
-  padding: 30px 16px 16px 16px;
+  padding: 26px 14px 14px 14px;
   text-align: center;
 }
 
 .user-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -188,20 +163,20 @@ function openProfile() {
 
 .verified-icon {
   color: var(--primary-color);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .user-handle {
   color: var(--text-muted);
-  font-size: 12px;
-  margin-bottom: 12px;
+  font-size: 11px;
+  margin-bottom: 10px;
 }
 
 .user-stats {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -212,59 +187,123 @@ function openProfile() {
 }
 
 .stat-item strong {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-main);
 }
 
 .stat-item span {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
 }
 
 .stat-divider {
   width: 1px;
-  height: 24px;
+  height: 20px;
   background: var(--border-color);
 }
 
-.menu-card {
-  padding: 10px;
+.widget-card {
+  padding: 14px;
 }
 
-.sidebar-menu {
+.widget-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.menu-item {
+.widget-header h3 {
+  font-size: 13px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--text-main);
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  width: 100%;
-  text-align: left;
+  gap: 6px;
 }
 
-.menu-item:hover, .menu-item.active {
-  background: rgba(80, 181, 255, 0.1);
+.btn-link {
+  font-size: 11px;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.widget-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topic-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.topic-item:hover {
+  background: var(--bg-surface-secondary);
+}
+
+.topic-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-name {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.topic-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.chevron-icon {
+  font-size: 10px;
+  color: var(--text-light);
+}
+
+.community-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.community-item:hover {
+  background: var(--bg-surface-secondary);
+}
+
+.community-info strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.community-info small {
+  font-size: 10px;
   color: var(--primary-color);
 }
 
-.menu-icon {
-  font-size: 16px;
-  width: 20px;
+.empty-small-text {
+  font-size: 11px;
+  color: var(--text-muted);
   text-align: center;
+  padding: 6px 0;
 }
 
-.menu-label {
-  flex: 1;
-}
+.text-warning { color: var(--warning-color); }
+.text-success { color: var(--success-color); }
 
 @media (max-width: 900px) {
   .sidebar-left {

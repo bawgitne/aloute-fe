@@ -115,7 +115,7 @@ const communities = reactive([
     is_private: false,
     member_count: 28400,
     post_count: 9120,
-    is_joined: false,
+    is_joined: true,
     flairs: [
       { id: 'flair_4', title: 'Paper Review', color: '#6f42c1' },
       { id: 'flair_5', title: 'Prompt Eng', color: '#ff5252' }
@@ -148,7 +148,7 @@ const customFeeds = reactive([
   }
 ])
 
-// Posts Stream (Supports normal posts, replies tree, quoted posts, polls, media)
+// Posts Stream
 const posts = reactive([
   {
     id: 'pst_1',
@@ -200,6 +200,22 @@ const posts = reactive([
         created_at: '1 hour ago',
         like_count: 6,
         is_liked: false
+      },
+      {
+        id: 'pst_1_reply_2',
+        user_id: 'usr_4',
+        user: {
+          id: 'usr_4',
+          name: 'Elena Rodriguez',
+          username: 'elena_rodriguez',
+          avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+          is_verified: false
+        },
+        content: 'The glassmorphism blur intensity on the header navbar is super crisp too!',
+        parent_post_id: 'pst_1',
+        created_at: '45 mins ago',
+        like_count: 4,
+        is_liked: true
       }
     ]
   },
@@ -246,7 +262,24 @@ const posts = reactive([
     is_reposted: true,
     is_bookmarked: false,
     created_at: '4 hours ago',
-    replies: []
+    replies: [
+      {
+        id: 'pst_2_reply_1',
+        user_id: 'usr_1',
+        user: {
+          id: 'usr_1',
+          name: 'Alex Rivera',
+          username: 'alex_dev',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+          is_verified: true
+        },
+        content: 'Durable Objects handle persistent WebSockets effortlessly. Highly recommended for live state!',
+        parent_post_id: 'pst_2',
+        created_at: '2 hours ago',
+        like_count: 12,
+        is_liked: true
+      }
+    ]
   },
   {
     id: 'pst_3',
@@ -373,12 +406,16 @@ const moderation = reactive({
   hiddenPosts: []
 })
 
+// Settings
+const showMiniProfileCard = ref(true)
+
 // Active State Navigation & UI Filters
 const activeTab = ref('feed') // 'feed', 'profile', 'communities', 'custom_feeds', 'messages', 'notifications', 'moderation', 'analytics', 'community_detail'
 const activeFeedFilter = ref('home') // 'home', 'following', 'feed_1', 'feed_2', 'topic_VueJS'
 const selectedCommunity = ref(communities[0])
 const selectedConversation = ref(conversations[0])
 const selectedProfileUser = ref(currentUser)
+const selectedPostForComments = ref(posts[0]) // Selected post to show comments side-panel on right
 const isChatDrawerOpen = ref(false)
 const isCreatePostModalOpen = ref(false)
 const isReportModalOpen = ref(false)
@@ -434,6 +471,7 @@ function createPost(newPostData) {
   }
   posts.unshift(newPost)
   currentUser.posts_count++
+  selectedPostForComments.value = newPost
 }
 
 function addReply(postId, replyContent) {
@@ -489,7 +527,6 @@ function votePoll(post, optionId) {
 
   if (post.poll.user_voted_option_id === optionId) return
 
-  // Single choice enforcement
   if (!post.poll.allow_multiple && post.poll.user_voted_option_id) {
     const prevOption = post.poll.options.find(o => o.id === post.poll.user_voted_option_id)
     if (prevOption) prevOption.vote_count--
@@ -597,11 +634,13 @@ export function useThreadsStore() {
     conversations,
     notifications,
     moderation,
+    showMiniProfileCard,
     activeTab,
     activeFeedFilter,
     selectedCommunity,
     selectedConversation,
     selectedProfileUser,
+    selectedPostForComments,
     isChatDrawerOpen,
     isCreatePostModalOpen,
     isReportModalOpen,

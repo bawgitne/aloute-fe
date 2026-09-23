@@ -1,8 +1,13 @@
 <template>
-  <article class="card-social post-card" v-if="!isPostHidden">
+  <article
+    class="card-social post-card"
+    :class="{ 'active-comment-post': selectedPostForComments && selectedPostForComments.id === post.id }"
+    v-if="!isPostHidden"
+    @click="selectPostForComments"
+  >
     <!-- Post Top Header -->
     <div class="post-header">
-      <div class="author-info" @click="openProfile">
+      <div class="author-info" @click.stop="openProfile">
         <img :src="post.user.avatar" class="avatar avatar-md" />
         <div class="author-details">
           <div class="author-title">
@@ -25,7 +30,7 @@
       </div>
 
       <!-- Action Options Dropdown -->
-      <div class="post-options-wrapper">
+      <div class="post-options-wrapper" @click.stop>
         <button class="btn-icon btn-sm" @click="toggleMenu" title="More Options">
           <i class="fa-solid fa-ellipsis"></i>
         </button>
@@ -51,7 +56,7 @@
           v-for="t in post.topics"
           :key="t"
           class="topic-tag"
-          @click="selectTopic(t)"
+          @click.stop="selectTopic(t)"
         >
           #{{ t }}
         </span>
@@ -65,18 +70,19 @@
       </div>
 
       <!-- Interactive Poll Widget -->
-      <PollWidget v-if="post.poll" :post="post" />
+      <PollWidget v-if="post.poll" :post="post" @click.stop />
 
       <!-- Embedded Quoted Post -->
       <QuoteCard
         v-if="post.quoted_post_id || post.quoted_post"
         :quotedPostId="post.quoted_post_id || ''"
         :quotedPostData="post.quoted_post"
+        @click.stop
       />
     </div>
 
     <!-- Post Action Footer -->
-    <div class="post-footer">
+    <div class="post-footer" @click.stop>
       <div class="post-actions">
         <!-- Like Action -->
         <button
@@ -89,12 +95,12 @@
           <span>{{ post.like_count }}</span>
         </button>
 
-        <!-- Reply Action -->
+        <!-- Reply / Comments Side Panel Action -->
         <button
           class="btn-action"
-          :class="{ active: showReplies }"
-          @click="showReplies = !showReplies"
-          title="Reply Thread"
+          :class="{ active: selectedPostForComments && selectedPostForComments.id === post.id }"
+          @click="selectPostForComments"
+          title="Open Comments Side-Panel"
         >
           <i class="fa-regular fa-comment"></i>
           <span>{{ post.reply_count }}</span>
@@ -140,13 +146,6 @@
         </button>
       </div>
     </div>
-
-    <!-- Nested Replies Section -->
-    <ReplyThread
-      v-if="showReplies"
-      :postId="post.id"
-      :replies="post.replies"
-    />
   </article>
 </template>
 
@@ -155,7 +154,6 @@ import { ref, computed } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 import PollWidget from './PollWidget.vue'
 import QuoteCard from './QuoteCard.vue'
-import ReplyThread from './ReplyThread.vue'
 
 const props = defineProps({
   post: { type: Object, required: true }
@@ -167,6 +165,7 @@ const {
   activeTab,
   activeFeedFilter,
   selectedProfileUser,
+  selectedPostForComments,
   isCreatePostModalOpen,
   isReportModalOpen,
   reportTargetItem,
@@ -179,9 +178,12 @@ const {
 } = useThreadsStore()
 
 const showMenu = ref(false)
-const showReplies = ref(false)
 
 const isPostHidden = computed(() => moderation.hiddenPosts.includes(props.post.id))
+
+function selectPostForComments() {
+  selectedPostForComments.value = props.post
+}
 
 function getVisibilityIcon(v) {
   if (v === 'FOLLOWERS') return 'fa-solid fa-user-group'
@@ -228,21 +230,27 @@ function openAnalytics() {
 <style scoped>
 .post-card {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post-card.active-comment-post {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(80, 181, 255, 0.2);
 }
 
 .post-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .author-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  cursor: pointer;
+  gap: 10px;
 }
 
 .author-title {
@@ -312,7 +320,6 @@ function openAnalytics() {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-main);
-  transition: background 0.2s ease;
 }
 
 .menu-dropdown-item:hover {
@@ -324,7 +331,7 @@ function openAnalytics() {
 }
 
 .post-body {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .post-text {
@@ -339,36 +346,30 @@ function openAnalytics() {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .topic-tag {
   color: var(--primary-color);
   font-weight: 600;
-  font-size: 12px;
-  cursor: pointer;
+  font-size: 11px;
   background: rgba(80, 181, 255, 0.08);
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: var(--radius-pill);
-  transition: background 0.2s ease;
-}
-
-.topic-tag:hover {
-  background: rgba(80, 181, 255, 0.18);
 }
 
 .post-media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  margin: 12px 0;
+  margin: 10px 0;
 }
 
 .media-img {
   width: 100%;
-  max-height: 380px;
+  max-height: 340px;
   object-fit: cover;
   border-radius: var(--radius-sm);
 }
@@ -384,17 +385,16 @@ function openAnalytics() {
 .post-actions {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
 }
 
 .btn-action {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  transition: color 0.2s ease;
 }
 
 .btn-action:hover, .btn-action.active {
@@ -404,15 +404,10 @@ function openAnalytics() {
 .btn-analytics {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-size: 11px;
   color: var(--text-light);
   font-weight: 600;
-  transition: color 0.2s ease;
-}
-
-.btn-analytics:hover {
-  color: var(--primary-color);
 }
 
 .text-danger { color: var(--danger-color); }
