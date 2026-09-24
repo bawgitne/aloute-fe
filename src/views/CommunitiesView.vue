@@ -60,6 +60,12 @@ const filteredCommunities = computed(() => {
 </script>
 
 <style scoped>
+.communities-view {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .page-header {
   margin-bottom: 20px;
 }

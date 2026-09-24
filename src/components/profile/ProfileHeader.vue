@@ -11,13 +11,22 @@
 
           <div class="profile-actions">
             <!-- If Current User -->
-            <button
-              v-if="user.id === currentUser.id"
-              class="btn-outline"
-              @click="showEditModal = true"
-            >
-              <i class="fa-solid fa-pen"></i> Edit Profile
-            </button>
+            <template v-if="user.id === currentUser.id">
+              <button
+                class="btn-outline"
+                @click="activeTab = 'analytics'"
+                title="View Account Analytics"
+              >
+                <i class="fa-solid fa-chart-line"></i> Analytics
+              </button>
+
+              <button
+                class="btn-outline"
+                @click="showEditModal = true"
+              >
+                <i class="fa-solid fa-pen"></i> Edit Profile
+              </button>
+            </template>
 
             <!-- If Other User -->
             <template v-else>
@@ -106,6 +115,7 @@ const props = defineProps({
 
 const {
   currentUser,
+  activeTab,
   followUser,
   unfollowUser,
   blockUser,

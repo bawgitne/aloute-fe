@@ -415,15 +415,58 @@ const activeFeedFilter = ref('home')
 const selectedCommunity = ref(communities[0])
 const selectedConversation = ref(conversations[0])
 const selectedProfileUser = ref(currentUser)
-const selectedPostForComments = ref(posts[0]) // Selected post to show comments side-panel on right
+const commentDisplayMode = ref('left_comments') // 'sidebar' | 'popup' | 'left_comments'
+const selectedPostForComments = ref(posts[0]) // Selected post to show comments side-panel
 const selectedPostOffsetTop = ref(0) // Vertical offset of selected post card relative to feed container
+const isPostDetailModalOpen = ref(false)
 const isChatDrawerOpen = ref(false)
+const chatDrawerSubView = ref('chat') // 'list' | 'chat'
+const activeMiniChats = ref([]) // [ { id: 'conv_1', conv, isMinimized: false } ]
 const isCreatePostModalOpen = ref(false)
 const isReportModalOpen = ref(false)
+
+function openMiniChat(conv) {
+  if (!conv) return
+  conv.unread_count = 0
+  selectedConversation.value = conv
+  
+  const existing = activeMiniChats.value.find(item => item.id === conv.id)
+  if (existing) {
+    existing.isMinimized = false
+  } else {
+    if (activeMiniChats.value.length >= 3) {
+      const openItems = activeMiniChats.value.filter(m => !m.isMinimized)
+      if (openItems.length >= 3) {
+        const firstOpen = activeMiniChats.value.find(m => !m.isMinimized)
+        if (firstOpen) firstOpen.isMinimized = true
+      }
+    }
+    activeMiniChats.value.push({
+      id: conv.id,
+      conv,
+      isMinimized: false
+    })
+  }
+}
+
+function closeMiniChat(convId) {
+  activeMiniChats.value = activeMiniChats.value.filter(item => item.id !== convId)
+}
+
+function toggleMinimizeMiniChat(convId) {
+  const item = activeMiniChats.value.find(m => m.id === convId)
+  if (item) {
+    item.isMinimized = !item.isMinimized
+  }
+}
 const reportTargetItem = ref(null)
 const isAnalyticsModalOpen = ref(false)
 const analyticsTargetPost = ref(null)
 const darkTheme = ref(false)
+
+const totalUnreadCount = computed(() => {
+  return conversations.reduce((acc, conv) => acc + (conv.unread_count || 0), 0)
+})
 
 // Methods
 function toggleDarkTheme() {
@@ -625,6 +668,15 @@ function createCustomFeed(name, description, selectedTopics, selectedUsers) {
   customFeeds.push(newFeed)
 }
 
+function markAllNotificationsRead() {
+  notifications.forEach(n => { n.is_read = true })
+}
+
+function markNotificationRead(notifId) {
+  const notif = notifications.find(n => n.id === notifId)
+  if (notif) notif.is_read = true
+}
+
 export function useThreadsStore() {
   return {
     currentUser,
@@ -644,13 +696,17 @@ export function useThreadsStore() {
     selectedProfileUser,
     selectedPostForComments,
     selectedPostOffsetTop,
+    commentDisplayMode,
+    isPostDetailModalOpen,
     isChatDrawerOpen,
+    chatDrawerSubView,
     isCreatePostModalOpen,
     isReportModalOpen,
     reportTargetItem,
     isAnalyticsModalOpen,
     analyticsTargetPost,
     darkTheme,
+    totalUnreadCount,
     toggleDarkTheme,
     createPost,
     addReply,
@@ -668,6 +724,12 @@ export function useThreadsStore() {
     leaveCommunity,
     sendMessage,
     addMessageReaction,
-    createCustomFeed
+    createCustomFeed,
+    openMiniChat,
+    activeMiniChats,
+    closeMiniChat,
+    toggleMinimizeMiniChat,
+    markAllNotificationsRead,
+    markNotificationRead
   }
 }

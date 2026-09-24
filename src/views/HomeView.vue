@@ -1,6 +1,15 @@
 <template>
-  <div class="home-view-layout">
-    <!-- Left Feed Stream Column -->
+  <div class="home-view-layout" :class="{ 'comments-on-left': commentDisplayMode === 'left_comments' }">
+    <!-- Left Side-Panel Column (Shown when commentDisplayMode === 'left_comments') -->
+    <div
+      v-if="commentDisplayMode === 'left_comments'"
+      class="comments-column comments-column-left"
+      :style="{ transform: `translateY(${selectedPostOffsetTop}px)`, transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }"
+    >
+      <PostCommentsSidePanel :post="selectedPostForComments" />
+    </div>
+
+    <!-- Feed Stream Column -->
     <div class="feed-stream-column">
       <!-- Story Highlights Bar -->
       <div class="card-social story-bar">
@@ -121,9 +130,10 @@
       </div>
     </div>
 
-    <!-- Right Comments / Discussion Side-Panel Column (Positioned dynamically at current selected post height) -->
+    <!-- Right Side-Panel Column (Shown ONLY when commentDisplayMode === 'sidebar') -->
     <div
-      class="comments-column"
+      v-if="commentDisplayMode === 'sidebar'"
+      class="comments-column comments-column-right"
       :style="{ transform: `translateY(${selectedPostOffsetTop}px)`, transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }"
     >
       <PostCommentsSidePanel :post="selectedPostForComments" />
@@ -147,6 +157,7 @@ const {
   selectedProfileUser,
   selectedPostForComments,
   selectedPostOffsetTop,
+  commentDisplayMode,
   isCreatePostModalOpen,
   followUser,
   unfollowUser
@@ -188,14 +199,22 @@ function openProfile(usr) {
 <style scoped>
 .home-view-layout {
   display: flex;
+  justify-content: center;
   gap: 20px;
   align-items: flex-start;
   position: relative;
+  width: 100%;
+}
+
+.home-view-layout.comments-on-left {
+  justify-content: flex-start;
+  gap: 16px;
 }
 
 .feed-stream-column {
+  max-width: 640px;
+  width: 100%;
   flex: 1;
-  min-width: 0;
 }
 
 .comments-column {

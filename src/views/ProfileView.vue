@@ -94,6 +94,12 @@ const tabPosts = computed(() => {
 </script>
 
 <style scoped>
+.profile-view {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .tabs-card {
   padding: 8px 16px;
   margin-bottom: 20px;

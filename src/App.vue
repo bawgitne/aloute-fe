@@ -4,7 +4,7 @@
     <Header />
 
     <!-- Main Content Body -->
-    <main class="main-container">
+    <main class="main-container" :class="{ 'docked-sidebar-mode': commentDisplayMode === 'left_comments' }">
       <!-- Left Sidebar Navigation -->
       <SidebarLeft />
 
@@ -20,7 +20,9 @@
     <CreatePostModal />
     <ReportModal />
     <AnalyticsModal />
+    <PostDetailModal />
     <ChatDrawer />
+    <MultiMiniChatDock />
   </div>
 </template>
 
@@ -38,12 +40,15 @@ import MessagingView from '@/views/MessagingView.vue'
 import NotificationsView from '@/views/NotificationsView.vue'
 import ModerationView from '@/views/ModerationView.vue'
 import AnalyticsView from '@/views/AnalyticsView.vue'
+import FriendsView from '@/views/FriendsView.vue'
 import CreatePostModal from '@/components/post/CreatePostModal.vue'
 import ReportModal from '@/components/post/ReportModal.vue'
 import AnalyticsModal from '@/components/post/AnalyticsModal.vue'
+import PostDetailModal from '@/components/post/PostDetailModal.vue'
 import ChatDrawer from '@/components/messaging/ChatDrawer.vue'
+import MultiMiniChatDock from '@/components/messaging/MultiMiniChatDock.vue'
 
-const { activeTab } = useThreadsStore()
+const { activeTab, commentDisplayMode } = useThreadsStore()
 
 const currentViewComponent = computed(() => {
   switch (activeTab.value) {
@@ -52,6 +57,7 @@ const currentViewComponent = computed(() => {
     case 'communities': return CommunitiesView
     case 'community_detail': return CommunityDetail
     case 'custom_feeds': return CustomFeedsView
+    case 'friends': return FriendsView
     case 'messages': return MessagingView
     case 'notifications': return NotificationsView
     case 'moderation': return ModerationView

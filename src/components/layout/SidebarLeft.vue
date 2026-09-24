@@ -1,81 +1,165 @@
 <template>
   <aside class="sidebar-left">
-    <!-- Option Show/Hide Mini Profile Card -->
-    <div v-if="showMiniProfileCard" class="card-social profile-mini-card" @click="openProfile">
-      <div class="mini-card-header">
-        <img :src="currentUser.cover" class="mini-cover" />
-        <img :src="currentUser.avatar" class="avatar avatar-lg mini-avatar" />
-      </div>
-      <div class="mini-card-body">
-        <div class="user-name">
-          {{ currentUser.display_name }}
-          <i v-if="currentUser.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
+    <!-- MODE 1: Left-Comments Mode (Frameless Pure Content with Dividers & Tight Spacing) -->
+    <template v-if="commentDisplayMode === 'left_comments'">
+      <div class="frameless-sidebar-content">
+        <!-- Section 1: Profile Mini Card -->
+        <div v-if="showMiniProfileCard" class="sidebar-section profile-section" @click="openProfile">
+          <div class="mini-card-header">
+            <img :src="currentUser.cover" class="mini-cover" />
+            <img :src="currentUser.avatar" class="avatar avatar-lg mini-avatar" />
+          </div>
+          <div class="mini-card-body">
+            <div class="user-name">
+              {{ currentUser.display_name }}
+              <i v-if="currentUser.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
+            </div>
+            <div class="user-handle">@{{ currentUser.username }}</div>
+            <div class="user-stats">
+              <div class="stat-item">
+                <strong>{{ currentUser.posts_count }}</strong>
+                <span>Posts</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <strong>{{ currentUser.followers_count }}</strong>
+                <span>Followers</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <strong>{{ currentUser.following_count }}</strong>
+                <span>Following</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="user-handle">@{{ currentUser.username }}</div>
-        <div class="user-stats">
-          <div class="stat-item">
-            <strong>{{ currentUser.posts_count }}</strong>
-            <span>Posts</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <strong>{{ currentUser.followers_count }}</strong>
-            <span>Followers</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <strong>{{ currentUser.following_count }}</strong>
-            <span>Following</span>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Moved Widget: Trending Topics -->
-    <div class="card-social widget-card">
-      <div class="widget-header">
-        <h3><i class="fa-solid fa-fire text-warning"></i> Trending Topics</h3>
-      </div>
-      <div class="widget-body">
-        <div
-          v-for="topic in topics"
-          :key="topic.id"
-          class="topic-item"
-          @click="selectTopic(topic.name)"
-        >
-          <div class="topic-info">
-            <span class="topic-name">#{{ topic.name }}</span>
-            <small class="topic-meta">{{ topic.post_count }} threads today</small>
-          </div>
-          <i class="fa-solid fa-chevron-right chevron-icon"></i>
-        </div>
-      </div>
-    </div>
+        <!-- Line Divider 1 -->
+        <div class="section-divider"></div>
 
-    <!-- New Widget: Your Joined Communities -->
-    <div class="card-social widget-card">
-      <div class="widget-header">
-        <h3><i class="fa-solid fa-users text-success"></i> Your Communities</h3>
-        <button class="btn-link" @click="activeTab = 'communities'">All</button>
-      </div>
-      <div class="widget-body">
-        <div
-          v-for="comm in joinedCommunities"
-          :key="comm.id"
-          class="community-item"
-          @click="openCommunity(comm)"
-        >
-          <img :src="comm.avatar" class="avatar avatar-sm" />
-          <div class="community-info">
-            <strong>{{ comm.name }}</strong>
-            <small>c/{{ comm.slug }}</small>
+        <!-- Section 2: Trending Hashtags / Topics -->
+        <div class="sidebar-section topics-section">
+          <div class="topics-list">
+            <div
+              v-for="topic in topics"
+              :key="topic.id"
+              class="topic-item"
+              @click="selectTopic(topic.name)"
+            >
+              <div class="topic-info">
+                <span class="topic-name">#{{ topic.name }}</span>
+                <small class="topic-meta">{{ topic.post_count }} threads today</small>
+              </div>
+              <i class="fa-solid fa-chevron-right chevron-icon"></i>
+            </div>
           </div>
         </div>
-        <div v-if="!joinedCommunities.length" class="empty-small-text">
-          No joined communities yet.
+
+        <!-- Line Divider 2 -->
+        <div class="section-divider"></div>
+
+        <!-- Section 3: Joined Communities -->
+        <div class="sidebar-section communities-section">
+          <div class="communities-list">
+            <div
+              v-for="comm in joinedCommunities"
+              :key="comm.id"
+              class="community-item"
+              @click="openCommunity(comm)"
+            >
+              <img :src="comm.avatar" class="avatar avatar-sm" />
+              <div class="community-info">
+                <strong>{{ comm.name }}</strong>
+                <small>c/{{ comm.slug }}</small>
+              </div>
+            </div>
+            <div v-if="!joinedCommunities.length" class="empty-small-text">
+              No joined communities yet.
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
+
+    <!-- MODE 2: Standard Modes (Side Panel Right or Popup - 3 Separate Cards) -->
+    <template v-else>
+      <!-- Option Show/Hide Mini Profile Card -->
+      <div v-if="showMiniProfileCard" class="card-social profile-mini-card" @click="openProfile">
+        <div class="mini-card-header">
+          <img :src="currentUser.cover" class="mini-cover" />
+          <img :src="currentUser.avatar" class="avatar avatar-lg mini-avatar" />
+        </div>
+        <div class="mini-card-body">
+          <div class="user-name">
+            {{ currentUser.display_name }}
+            <i v-if="currentUser.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
+          </div>
+          <div class="user-handle">@{{ currentUser.username }}</div>
+          <div class="user-stats">
+            <div class="stat-item">
+              <strong>{{ currentUser.posts_count }}</strong>
+              <span>Posts</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <strong>{{ currentUser.followers_count }}</strong>
+              <span>Followers</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <strong>{{ currentUser.following_count }}</strong>
+              <span>Following</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trending Topics Widget Card -->
+      <div class="card-social widget-card">
+        <div class="widget-header">
+          <h3><i class="fa-solid fa-fire text-warning"></i> Trending Topics</h3>
+        </div>
+        <div class="widget-body">
+          <div
+            v-for="topic in topics"
+            :key="topic.id"
+            class="topic-item"
+            @click="selectTopic(topic.name)"
+          >
+            <div class="topic-info">
+              <span class="topic-name">#{{ topic.name }}</span>
+              <small class="topic-meta">{{ topic.post_count }} threads today</small>
+            </div>
+            <i class="fa-solid fa-chevron-right chevron-icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Your Communities Widget Card -->
+      <div class="card-social widget-card">
+        <div class="widget-header">
+          <h3><i class="fa-solid fa-users text-success"></i> Your Communities</h3>
+          <button class="btn-link" @click="activeTab = 'communities'">All</button>
+        </div>
+        <div class="widget-body">
+          <div
+            v-for="comm in joinedCommunities"
+            :key="comm.id"
+            class="community-item"
+            @click="openCommunity(comm)"
+          >
+            <img :src="comm.avatar" class="avatar avatar-sm" />
+            <div class="community-info">
+              <strong>{{ comm.name }}</strong>
+              <small>c/{{ comm.slug }}</small>
+            </div>
+          </div>
+          <div v-if="!joinedCommunities.length" class="empty-small-text">
+            No joined communities yet.
+          </div>
+        </div>
+      </div>
+    </template>
   </aside>
 </template>
 
@@ -88,6 +172,7 @@ const {
   topics,
   communities,
   showMiniProfileCard,
+  commentDisplayMode,
   activeTab,
   activeFeedFilter,
   selectedCommunity,
@@ -118,24 +203,58 @@ function openCommunity(comm) {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
-.profile-mini-card {
+.frameless-sidebar-content {
+  background: transparent;
+  border: none;
+  box-shadow: none;
   padding: 0;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-section {
+  padding: 2px 0;
+}
+
+.profile-section {
+  padding: 0;
   cursor: pointer;
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 6px 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.section-header h3 {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .mini-card-header {
   position: relative;
   height: 65px;
+  overflow: visible;
 }
 
 .mini-cover {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: var(--radius-md);
 }
 
 .mini-avatar {
@@ -143,12 +262,13 @@ function openCommunity(comm) {
   bottom: -22px;
   left: 50%;
   transform: translateX(-50%);
-  border: 3px solid var(--bg-surface);
+  border: 3px solid var(--bg-main);
   box-shadow: var(--shadow-sm);
+  z-index: 2;
 }
 
 .mini-card-body {
-  padding: 26px 14px 14px 14px;
+  padding: 24px 6px 4px 6px;
   text-align: center;
 }
 
@@ -169,14 +289,14 @@ function openCommunity(comm) {
 .user-handle {
   color: var(--text-muted);
   font-size: 11px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .user-stats {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding-top: 10px;
+  padding-top: 6px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -239,7 +359,7 @@ function openCommunity(comm) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px;
+  padding: 4px 6px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s ease;
@@ -274,7 +394,7 @@ function openCommunity(comm) {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 4px 6px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s ease;

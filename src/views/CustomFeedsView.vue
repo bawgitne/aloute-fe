@@ -64,6 +64,12 @@ function applyFeedFilter(feed) {
 </script>
 
 <style scoped>
+.custom-feeds-view {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .page-header {
   margin-bottom: 20px;
 }

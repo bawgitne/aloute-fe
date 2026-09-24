@@ -11,8 +11,8 @@
           v-for="conv in conversations"
           :key="conv.id"
           class="conv-item"
-          :class="{ active: selectedConversation.id === conv.id }"
-          @click="selectedConversation = conv"
+          :class="{ active: selectedConversation && selectedConversation.id === conv.id }"
+          @click="selectConv(conv)"
         >
           <div class="avatar-wrapper">
             <img :src="conv.participant ? conv.participant.avatar : conv.group_avatar" class="avatar avatar-md" />
@@ -26,7 +26,17 @@
             </div>
             <div class="conv-preview-row">
               <p class="truncate">{{ conv.last_message }}</p>
-              <span v-if="conv.unread_count" class="badge badge-danger">{{ conv.unread_count }}</span>
+              <div class="item-actions-right">
+                <button
+                  v-if="commentDisplayMode === 'left_comments'"
+                  class="btn-icon btn-xs popout-icon-btn"
+                  @click.stop="openMiniChat(conv)"
+                  title="Đẩy ra cửa sổ mini Facebook"
+                >
+                  <i class="fa-solid fa-up-right-from-square"></i>
+                </button>
+                <span v-if="conv.unread_count" class="badge badge-danger">{{ conv.unread_count }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -35,6 +45,17 @@
 
     <!-- Active Chat Thread -->
     <div v-if="selectedConversation" class="chat-thread-panel">
+      <!-- Left Comments Mode Active Notification Banner -->
+      <div v-if="commentDisplayMode === 'left_comments'" class="mini-popout-alert-bar">
+        <div class="alert-info-text">
+          <i class="fa-solid fa-comment-dots text-primary"></i>
+          <span><strong>Chế độ Left Split:</strong> Cuộc trò chuyện đã đẩy ra cửa sổ mini Facebook ở góc màn hình!</span>
+        </div>
+        <button class="btn-sm btn-primary" @click="openMiniChat(selectedConversation)">
+          <i class="fa-solid fa-up-right-from-square"></i> Mở Mini Chat
+        </button>
+      </div>
+
       <!-- Header -->
       <div class="thread-header">
         <div class="thread-user-info">
@@ -44,6 +65,14 @@
             <small class="text-success"><i class="fa-solid fa-circle font-8"></i> Active now</small>
           </div>
         </div>
+        <button
+          v-if="commentDisplayMode === 'left_comments'"
+          class="btn-outline btn-sm"
+          @click="openMiniChat(selectedConversation)"
+          title="Đẩy ra cửa sổ mini"
+        >
+          <i class="fa-solid fa-up-right-from-square"></i> Floating Window
+        </button>
       </div>
 
       <!-- Messages Stream -->
@@ -98,12 +127,21 @@ const {
   currentUser,
   conversations,
   selectedConversation,
+  commentDisplayMode,
   sendMessage,
-  addMessageReaction
+  addMessageReaction,
+  openMiniChat
 } = useThreadsStore()
 
 const inputText = ref('')
 const messagesBody = ref(null)
+
+function selectConv(conv) {
+  selectedConversation.value = conv
+  if (commentDisplayMode.value === 'left_comments') {
+    openMiniChat(conv)
+  }
+}
 
 const convTitle = computed(() => {
   if (!selectedConversation.value) return ''
@@ -335,6 +373,44 @@ function send() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mini-popout-alert-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(80, 181, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+}
+
+.alert-info-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+}
+
+.item-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popout-icon-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 10px;
+}
+
+.thread-header {
+  padding: 14px 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .font-8 { font-size: 8px; }

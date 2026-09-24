@@ -168,6 +168,8 @@ const {
   selectedProfileUser,
   selectedPostForComments,
   selectedPostOffsetTop,
+  commentDisplayMode,
+  isPostDetailModalOpen,
   isCreatePostModalOpen,
   isReportModalOpen,
   reportTargetItem,
@@ -185,18 +187,22 @@ const showMenu = ref(false)
 const isPostHidden = computed(() => moderation.hiddenPosts.includes(props.post.id))
 
 function selectPostForComments() {
-  if (cardRef.value) {
-    const parent = cardRef.value.closest('.home-view-layout')
-    if (parent) {
-      const cardRect = cardRef.value.getBoundingClientRect()
-      const parentRect = parent.getBoundingClientRect()
-      const topOffset = cardRect.top - parentRect.top
-      selectedPostOffsetTop.value = Math.max(0, topOffset)
-    } else {
-      selectedPostOffsetTop.value = cardRef.value.offsetTop || 0
+  selectedPostForComments.value = props.post
+  if (commentDisplayMode.value === 'popup') {
+    isPostDetailModalOpen.value = true
+  } else {
+    if (cardRef.value) {
+      const parent = cardRef.value.closest('.home-view-layout')
+      if (parent) {
+        const cardRect = cardRef.value.getBoundingClientRect()
+        const parentRect = parent.getBoundingClientRect()
+        const topOffset = cardRect.top - parentRect.top
+        selectedPostOffsetTop.value = Math.max(0, topOffset)
+      } else {
+        selectedPostOffsetTop.value = cardRef.value.offsetTop || 0
+      }
     }
   }
-  selectedPostForComments.value = props.post
 }
 
 function getVisibilityIcon(v) {
