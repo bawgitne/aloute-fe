@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980" role="img" aria-labelledby="title desc">
+  <title id="title">SocialV ERD relationship diagram</title>
+  <desc id="desc">Simplified database relationship diagram for users, posts, topics, polls, communities, messaging, notifications, reports, and analytics.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3f4a5a"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f9fc; }
+      .group { fill: #ffffff; stroke: #b9c3d0; stroke-width: 2; rx: 18; }
+      .group-title { font: 600 20px Arial, sans-serif; fill: #182230; }
+      .table { fill: #eef4ff; stroke: #6f8fca; stroke-width: 1.5; rx: 10; }
+      .table.alt { fill: #eefaf3; stroke: #62a77a; }
+      .table.warn { fill: #fff6e8; stroke: #d59a43; }
+      .table.pink { fill: #fff0f4; stroke: #cc6f8d; }
+      .table.gray { fill: #f1f3f6; stroke: #8793a3; }
+      .table-title { font: 600 15px Arial, sans-serif; fill: #101828; }
+      .field { font: 12px Arial, sans-serif; fill: #344054; }
+      .pk { font: 700 12px Arial, sans-serif; fill: #0b5cad; }
+      .fk { font: 700 12px Arial, sans-serif; fill: #8a4d0f; }
+      .line { fill: none; stroke: #3f4a5a; stroke-width: 2; marker-end: url(#arrow); }
+      .line.soft { stroke-dasharray: 7 6; }
+      .note { font: 13px Arial, sans-serif; fill: #475467; }
+      .legend-title { font: 700 14px Arial, sans-serif; fill: #182230; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1400" height="980"/>
+  <text x="48" y="48" class="group-title">SocialV - So do ERD rut gon va khoa lien ket</text>
+  <text x="48" y="74" class="note">PK = khoa chinh, FK = khoa ngoai, bang trung gian the hien quan he N-N.</text>
+
+  <rect class="group" x="40" y="110" width="300" height="300"/>
+  <text x="62" y="142" class="group-title">Identity &amp; Social Graph</text>
+  <g transform="translate(62,164)">
+    <rect class="table" width="250" height="86"/>
+    <text class="table-title" x="14" y="24">users</text>
+    <text class="pk" x="14" y="46">PK id</text>
+    <text class="field" x="14" y="64">username, email, password_hash</text>
+  </g>
+  <g transform="translate(62,264)">
+    <rect class="table alt" width="250" height="72"/>
+    <text class="table-title" x="14" y="24">profiles</text>
+    <text class="pk" x="14" y="46">PK/FK user_id -&gt; users.id</text>
+    <text class="field" x="14" y="62">display_name, counters</text>
+  </g>
+  <g transform="translate(62,350)">
+    <rect class="table gray" width="250" height="42"/>
+    <text class="table-title" x="14" y="26">follows / blocks / mutes</text>
+  </g>
+
+  <rect class="group" x="400" y="110" width="360" height="385"/>
+  <text x="422" y="142" class="group-title">Post &amp; Interaction</text>
+  <g transform="translate(430,164)">
+    <rect class="table" width="290" height="108"/>
+    <text class="table-title" x="14" y="24">posts</text>
+    <text class="pk" x="14" y="46">PK id</text>
+    <text class="fk" x="14" y="64">FK user_id -&gt; users.id</text>
+    <text class="fk" x="14" y="82">FK parent_post_id / quoted_post_id -&gt; posts.id</text>
+    <text class="field" x="14" y="100">visibility, counters, deleted_at</text>
+  </g>
+  <g transform="translate(430,292)">
+    <rect class="table alt" width="290" height="64"/>
+    <text class="table-title" x="14" y="24">post_media</text>
+    <text class="pk" x="14" y="44">PK id, FK post_id -&gt; posts.id</text>
+  </g>
+  <g transform="translate(430,374)">
+    <rect class="table warn" width="290" height="82"/>
+    <text class="table-title" x="14" y="24">post_likes / reposts / bookmarks</text>
+    <text class="pk" x="14" y="46">PK (user_id, post_id)</text>
+    <text class="fk" x="14" y="64">FK users + posts</text>
+  </g>
+
+  <rect class="group" x="820" y="110" width="240" height="385"/>
+  <text x="842" y="142" class="group-title">Topic &amp; Poll</text>
+  <g transform="translate(842,164)">
+    <rect class="table alt" width="196" height="64"/>
+    <text class="table-title" x="14" y="24">topics</text>
+    <text class="pk" x="14" y="46">PK id</text>
+  </g>
+  <g transform="translate(842,246)">
+    <rect class="table gray" width="196" height="64"/>
+    <text class="table-title" x="14" y="24">post_topics</text>
+    <text class="pk" x="14" y="46">PK (post_id, topic_id)</text>
+  </g>
+  <g transform="translate(842,328)">
+    <rect class="table warn" width="196" height="64"/>
+    <text class="table-title" x="14" y="24">polls</text>
+    <text class="fk" x="14" y="46">FK post_id -&gt; posts.id</text>
+  </g>
+  <g transform="translate(842,410)">
+    <rect class="table warn" width="196" height="64"/>
+    <text class="table-title" x="14" y="24">poll_options / votes</text>
+    <text class="fk" x="14" y="46">FK poll_id + user_id</text>
+  </g>
+
+  <rect class="group" x="1110" y="110" width="250" height="385"/>
+  <text x="1132" y="142" class="group-title">Community</text>
+  <g transform="translate(1132,164)">
+    <rect class="table pink" width="206" height="76"/>
+    <text class="table-title" x="14" y="24">communities</text>
+    <text class="pk" x="14" y="46">PK id</text>
+    <text class="fk" x="14" y="62">FK owner_id -&gt; users.id</text>
+  </g>
+  <g transform="translate(1132,258)">
+    <rect class="table pink" width="206" height="70"/>
+    <text class="table-title" x="14" y="24">community_members</text>
+    <text class="pk" x="14" y="46">PK (community_id, user_id)</text>
+  </g>
+  <g transform="translate(1132,346)">
+    <rect class="table pink" width="206" height="70"/>
+    <text class="table-title" x="14" y="24">community_posts</text>
+    <text class="pk" x="14" y="46">PK (community_id, post_id)</text>
+  </g>
+  <g transform="translate(1132,434)">
+    <rect class="table pink" width="206" height="42"/>
+    <text class="table-title" x="14" y="26">community_flairs</text>
+  </g>
+
+  <rect class="group" x="40" y="560" width="360" height="270"/>
+  <text x="62" y="592" class="group-title">Messaging</text>
+  <g transform="translate(62,616)">
+    <rect class="table" width="286" height="64"/>
+    <text class="table-title" x="14" y="24">conversations</text>
+    <text class="pk" x="14" y="46">PK id, FK creator_id -&gt; users.id</text>
+  </g>
+  <g transform="translate(62,698)">
+    <rect class="table gray" width="286" height="64"/>
+    <text class="table-title" x="14" y="24">conversation_members</text>
+    <text class="pk" x="14" y="46">PK (conversation_id, user_id)</text>
+  </g>
+  <g transform="translate(62,780)">
+    <rect class="table alt" width="286" height="64"/>
+    <text class="table-title" x="14" y="24">messages / message_media / reactions</text>
+    <text class="fk" x="14" y="46">FK conversation_id, sender_id</text>
+  </g>
+
+  <rect class="group" x="460" y="560" width="340" height="270"/>
+  <text x="482" y="592" class="group-title">Notification &amp; Moderation</text>
+  <g transform="translate(482,616)">
+    <rect class="table warn" width="286" height="76"/>
+    <text class="table-title" x="14" y="24">notifications</text>
+    <text class="pk" x="14" y="46">PK id</text>
+    <text class="fk" x="14" y="62">FK user, actor, post, message, community</text>
+  </g>
+  <g transform="translate(482,714)">
+    <rect class="table warn" width="286" height="76"/>
+    <text class="table-title" x="14" y="24">reports</text>
+    <text class="pk" x="14" y="46">PK id</text>
+    <text class="fk" x="14" y="62">FK reporter, reported_user, reported_post</text>
+  </g>
+
+  <rect class="group" x="860" y="560" width="270" height="270"/>
+  <text x="882" y="592" class="group-title">Custom Feed</text>
+  <g transform="translate(882,616)">
+    <rect class="table alt" width="216" height="70"/>
+    <text class="table-title" x="14" y="24">custom_feeds</text>
+    <text class="fk" x="14" y="46">FK owner_id -&gt; users.id</text>
+  </g>
+  <g transform="translate(882,704)">
+    <rect class="table gray" width="216" height="86"/>
+    <text class="table-title" x="14" y="24">feed_topics / feed_users</text>
+    <text class="pk" x="14" y="46">PK composite</text>
+    <text class="fk" x="14" y="64">FK feed + topics/users</text>
+  </g>
+
+  <rect class="group" x="1160" y="560" width="200" height="270"/>
+  <text x="1182" y="592" class="group-title">Analytics</text>
+  <g transform="translate(1182,616)">
+    <rect class="table gray" width="146" height="64"/>
+    <text class="table-title" x="14" y="24">post_views</text>
+    <text class="fk" x="14" y="46">FK post, user</text>
+  </g>
+  <g transform="translate(1182,704)">
+    <rect class="table gray" width="146" height="64"/>
+    <text class="table-title" x="14" y="24">link_clicks</text>
+    <text class="fk" x="14" y="46">FK post, user</text>
+  </g>
+
+  <path class="line" d="M312 205 C360 205, 370 205, 430 205"/>
+  <path class="line" d="M190 250 C190 258, 190 260, 190 264"/>
+  <path class="line soft" d="M312 372 C358 384, 380 408, 430 414"/>
+  <path class="line" d="M720 210 C770 210, 790 196, 842 196"/>
+  <path class="line" d="M720 210 C790 250, 802 278, 842 278"/>
+  <path class="line" d="M720 225 C785 345, 800 360, 842 360"/>
+  <path class="line" d="M1038 278 C1068 278, 1092 292, 1132 292"/>
+  <path class="line" d="M720 235 C884 290, 980 358, 1132 381"/>
+  <path class="line" d="M312 205 C870 78, 1040 144, 1132 194"/>
+  <path class="line" d="M190 392 C170 468, 176 552, 205 616"/>
+  <path class="line" d="M348 730 C390 730, 430 686, 482 654"/>
+  <path class="line" d="M720 230 C812 500, 900 584, 1182 646"/>
+  <path class="line" d="M312 205 C570 516, 716 600, 882 650"/>
+  <path class="line" d="M1038 196 C1080 510, 1115 610, 1182 730"/>
+  <path class="line soft" d="M575 164 C560 116, 590 96, 642 164"/>
+
+  <g transform="translate(48,890)">
+    <text class="legend-title" x="0" y="0">Chu thich:</text>
+    <rect class="table" x="0" y="18" width="22" height="14"/>
+    <text class="note" x="32" y="30">Bang chinh</text>
+    <rect class="table gray" x="132" y="18" width="22" height="14"/>
+    <text class="note" x="164" y="30">Bang trung gian N-N</text>
+    <line class="line" x1="330" y1="25" x2="400" y2="25"/>
+    <text class="note" x="414" y="30">Khoa ngoai FK</text>
+    <line class="line soft" x1="530" y1="25" x2="600" y2="25"/>
+    <text class="note" x="614" y="30">Self-reference</text>
+  </g>
+</svg>
