@@ -67,7 +67,11 @@
             :class="{ mine: msg.sender_id === currentUser.id }"
           >
             <div class="mini-bubble">
-              <p>{{ msg.content }}</p>
+              <p v-if="msg.content">{{ msg.content }}</p>
+              <div v-if="msg.media_url || msg.media?.[0]?.url" class="mt-1 rounded-lg overflow-hidden max-h-28 bg-black">
+                <img :src="msg.media_url || msg.media?.[0]?.url" class="max-h-28 object-contain w-full" />
+              </div>
+
               <div class="bubble-meta">
                 <small>{{ msg.created_at }}</small>
                 <div v-if="msg.reactions && msg.reactions.length" class="reactions-badge">
@@ -86,9 +90,18 @@
           </div>
         </div>
 
+        <!-- Attachment Box -->
+        <div v-if="showAttachments[item.id]" class="px-2 py-1.5 bg-gray-950 border-t border-gray-800 flex gap-1 items-center text-xs">
+          <input type="text" v-model="mediaUrls[item.id]" placeholder="Dán URL ảnh/file..." class="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-[11px] text-white" />
+          <button @click="showAttachments[item.id] = false" class="px-2 py-1 bg-indigo-600 rounded text-[10px] text-white font-bold">Xong</button>
+        </div>
+
         <!-- Window Input Footer -->
-        <div class="window-footer">
-          <div class="input-relative">
+        <div class="window-footer flex items-center gap-1">
+          <button @click="showAttachments[item.id] = !showAttachments[item.id]" class="p-1 text-gray-400 hover:text-indigo-400" title="Đính kèm ảnh/file">
+            <i class="fa-solid fa-paperclip"></i>
+          </button>
+          <div class="input-relative flex-1">
             <input
               type="text"
               v-model="inputTexts[item.id]"
@@ -97,7 +110,7 @@
             />
             <button
               class="embed-send-btn"
-              :disabled="!inputTexts[item.id] || !inputTexts[item.id].trim()"
+              :disabled="(!inputTexts[item.id] || !inputTexts[item.id].trim()) && (!mediaUrls[item.id] || !mediaUrls[item.id].trim())"
               @click="handleSend(item)"
               title="Send"
             >
@@ -125,6 +138,8 @@ const {
 } = useThreadsStore()
 
 const inputTexts = reactive({})
+const mediaUrls = reactive({})
+const showAttachments = reactive({})
 const streamRefs = reactive({})
 
 function setStreamRef(id, el) {
@@ -154,10 +169,13 @@ function isConvOnline(conv) {
 }
 
 function handleSend(item) {
-  const text = inputTexts[item.id]
-  if (!text || !text.trim()) return
-  sendMessage(item.id, text.trim())
+  const text = (inputTexts[item.id] || '').trim()
+  const mediaUrl = (mediaUrls[item.id] || '').trim()
+  if (!text && !mediaUrl) return
+  sendMessage(item.id, text, { media_url: mediaUrl || null })
   inputTexts[item.id] = ''
+  mediaUrls[item.id] = ''
+  showAttachments[item.id] = false
   nextTick(() => {
     scrollToBottom(item.id)
   })

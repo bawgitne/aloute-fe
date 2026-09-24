@@ -169,26 +169,47 @@ const isTopicFilterActive = computed(() => activeFeedFilter.value.startsWith('to
 const recommendedUsers = computed(() => users.filter(u => u.id !== currentUser.id))
 
 const filteredPosts = computed(() => {
+  let basePosts = posts.filter(p => {
+    // Filter out Blocked / Muted users
+    const isBlocked = p.user?.is_blocked || store.moderation.blockedUsers.some(u => u.id === p.user_id)
+    const isMuted = p.user?.is_muted || store.moderation.mutedUsers.some(u => u.id === p.user_id)
+    if (isBlocked || isMuted) return false
+
+    // Enforce Visibility
+    const vis = (p.visibility || 'PUBLIC').toUpperCase()
+    const isAuthor = p.user_id === currentUser.id
+    if (vis === 'FOLLOWERS') {
+      const isFollowing = p.user?.is_following || users.some(u => u.id === p.user_id && u.is_following)
+      if (!isAuthor && !isFollowing) return false
+    }
+    if (vis === 'MENTIONED') {
+      const isMentioned = p.content?.includes(`@${currentUser.username}`)
+      if (!isAuthor && !isMentioned) return false
+    }
+
+    return true
+  })
+
   if (activeFeedFilter.value === 'home') {
-    return posts
+    return basePosts
   }
   if (activeFeedFilter.value === 'following') {
     const followingIds = users.filter(u => u.is_following).map(u => u.id)
-    return posts.filter(p => followingIds.includes(p.user_id) || p.user_id === currentUser.id)
+    return basePosts.filter(p => followingIds.includes(p.user_id) || p.user_id === currentUser.id)
   }
   if (isTopicFilterActive.value) {
     const topicName = activeFeedFilter.value.replace('topic_', '')
-    return posts.filter(p => p.topics && p.topics.includes(topicName))
+    return basePosts.filter(p => p.topics && p.topics.includes(topicName))
   }
   const targetFeed = customFeeds.find(f => f.id === activeFeedFilter.value)
   if (targetFeed) {
-    return posts.filter(p => {
+    return basePosts.filter(p => {
       const matchTopic = p.topics && p.topics.some(t => targetFeed.topics.includes(t))
       const matchUser = targetFeed.users.includes(p.user?.username)
       return matchTopic || matchUser
     })
   }
-  return posts
+  return basePosts
 })
 
 function openProfile(usr) {

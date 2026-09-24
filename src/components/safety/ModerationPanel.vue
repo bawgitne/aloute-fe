@@ -52,8 +52,24 @@
           </div>
           <p class="report-desc">{{ rep.description || 'No additional details provided.' }}</p>
 
-          <div class="report-footer">
-            <small class="text-muted">Reported by {{ rep.reporter }} • {{ rep.created_at }}</small>
+          <div class="report-footer flex items-center justify-between mt-2 pt-2 border-t border-gray-800">
+            <small class="text-muted">Báo cáo bởi {{ rep.reporter }} • {{ rep.created_at }}</small>
+            <div class="flex gap-2">
+              <button
+                v-if="rep.status !== 'RESOLVED'"
+                @click="store.updateReportStatus(rep.id, 'RESOLVED')"
+                class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-xs"
+              >
+                Xử lý (Resolve)
+              </button>
+              <button
+                v-if="rep.status !== 'REJECTED'"
+                @click="store.updateReportStatus(rep.id, 'REJECTED')"
+                class="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg text-xs"
+              >
+                Từ chối (Reject)
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -128,7 +144,8 @@
 import { ref } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const { moderation } = useThreadsStore()
+const store = useThreadsStore()
+const { moderation } = store
 const currentTab = ref('reports')
 
 function getStatusBadgeClass(status) {

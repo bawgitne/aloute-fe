@@ -35,6 +35,7 @@ const users = reactive([
     following_count: 210,
     posts_count: 184,
     is_following: true,
+    is_follower: true,
     is_blocked: false,
     is_muted: false,
     is_restricted: false
@@ -51,6 +52,7 @@ const users = reactive([
     following_count: 150,
     posts_count: 312,
     is_following: false,
+    is_follower: false,
     is_blocked: false,
     is_muted: false,
     is_restricted: false
@@ -67,6 +69,7 @@ const users = reactive([
     following_count: 420,
     posts_count: 95,
     is_following: true,
+    is_follower: true,
     is_blocked: false,
     is_muted: false,
     is_restricted: false
@@ -86,6 +89,7 @@ const topics = reactive([
 const communities = reactive([
   {
     id: 'comm_1',
+    creator_id: 'usr_1',
     name: 'Vue Developers Hub',
     slug: 'vue-devs',
     description: 'The premier community for Vue 3, Vite, Pinia, and Nuxt developers to collaborate and share snippets.',
@@ -95,6 +99,12 @@ const communities = reactive([
     member_count: 14200,
     post_count: 3890,
     is_joined: true,
+    is_requested: false,
+    members: [
+      { id: 'usr_1', name: 'Alex Rivera', username: 'alex_dev', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80', role: 'ADMIN' },
+      { id: 'usr_2', name: 'Sarah Chen', username: 'sarah_ux', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80', role: 'MODERATOR' }
+    ],
+    join_requests: [],
     flairs: [
       { id: 'flair_1', title: 'Showcase', color: '#00d084' },
       { id: 'flair_2', title: 'Help Needed', color: '#ffb800' },
@@ -107,15 +117,23 @@ const communities = reactive([
   },
   {
     id: 'comm_2',
+    creator_id: 'usr_3',
     name: 'AI & Machine Learning Guild',
     slug: 'ai-ml-guild',
     description: 'Exploring LLMs, Agentic Coding, Diffusion models, and future AI tech.',
     avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
     cover: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1000&auto=format&fit=crop&q=80',
-    is_private: false,
+    is_private: true,
     member_count: 28400,
     post_count: 9120,
-    is_joined: true,
+    is_joined: false,
+    is_requested: false,
+    members: [
+      { id: 'usr_3', name: 'Marcus Vance', username: 'marcus_ai', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80', role: 'ADMIN' }
+    ],
+    join_requests: [
+      { id: 'usr_4', name: 'Elena Rodriguez', username: 'elena_rodriguez', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80' }
+    ],
     flairs: [
       { id: 'flair_4', title: 'Paper Review', color: '#6f42c1' },
       { id: 'flair_5', title: 'Prompt Eng', color: '#ff5252' }
@@ -475,11 +493,22 @@ const totalUnreadCount = computed(() => {
   return conversations.reduce((acc, conv) => acc + (conv.unread_count || 0), 0)
 })
 
+// Auth Guard Helper
+function checkAuth() {
+  if (!isLoggedIn.value) {
+    isAuthModalOpen.value = true
+    return false
+  }
+  return true
+}
+
 // Methods
-function pushNotification(type, actor, message, postId = null) {
+function pushNotification(type, actor, message, postId = null, targetUserId = 'usr_1') {
   const newNotif = {
     id: `notif_${Date.now()}`,
+    target_user_id: targetUserId,
     actor: {
+      id: actor.id || 'usr_actor',
       name: actor.display_name || actor.name,
       username: actor.username,
       avatar: actor.avatar
@@ -493,11 +522,15 @@ function pushNotification(type, actor, message, postId = null) {
   notifications.unshift(newNotif)
 }
 
-function openConversation(conv) {
-  if (!conv) return
-  conv.unread_count = 0
-  selectedConversation.value = conv
-  chatDrawerSubView.value = 'chat'
+function openConversation(param) {
+  if (!param) return
+  let conv = typeof param === 'string' ? conversations.find(c => c.id === param) : param
+  if (conv) {
+    conv.unread_count = 0
+    selectedConversation.value = conv
+    isChatDrawerOpen.value = true
+    chatDrawerSubView.value = 'chat'
+  }
 }
 
 function openMiniChat(target) {
@@ -638,14 +671,21 @@ function createPost(newPostData) {
 }
 
 function openEditPostModal(post) {
+  if (!checkAuth()) return
   editingPost.value = post
   isEditPostModalOpen.value = true
 }
 
-function editPost(postId, newContent) {
+function editPost(postId, newContent, options = {}) {
+  if (!checkAuth()) return
   const target = posts.find(p => p.id === postId)
   if (target) {
     target.content = newContent
+    if (options.allow_reply) target.allow_reply = options.allow_reply.toUpperCase()
+    if (options.allow_quote) target.allow_quote = options.allow_quote.toUpperCase()
+    if (options.media_url) {
+      target.media = [{ id: `med_${Date.now()}`, type: options.media_type || 'IMAGE', url: options.media_url }]
+    }
     target.created_at = 'Edited just now'
   }
   isEditPostModalOpen.value = false
@@ -653,6 +693,7 @@ function editPost(postId, newContent) {
 }
 
 function deletePost(postId) {
+  if (!checkAuth()) return
   const index = posts.findIndex(p => p.id === postId)
   if (index !== -1) {
     posts.splice(index, 1)
@@ -661,6 +702,7 @@ function deletePost(postId) {
 }
 
 function addReply(postId, replyContent) {
+  if (!checkAuth()) return
   const targetPost = posts.find(p => p.id === postId)
   if (targetPost) {
     const newReply = {
@@ -669,6 +711,7 @@ function addReply(postId, replyContent) {
       user: {
         id: currentUser.id,
         name: currentUser.display_name,
+        display_name: currentUser.display_name,
         username: currentUser.username,
         avatar: currentUser.avatar,
         is_verified: currentUser.is_verified
@@ -683,17 +726,18 @@ function addReply(postId, replyContent) {
     targetPost.reply_count++
 
     if (targetPost.user_id !== currentUser.id) {
-      pushNotification('REPLY', currentUser, `replied: "${replyContent.slice(0, 35)}..."`, postId)
+      pushNotification('REPLY', currentUser, `replied: "${replyContent.slice(0, 35)}..."`, postId, targetPost.user_id)
     }
   }
 }
 
 function toggleLikePost(post) {
+  if (!checkAuth()) return
   post.is_liked = !post.is_liked
   if (post.is_liked) {
     post.like_count++
     if (post.user_id !== currentUser.id) {
-      pushNotification('LIKE', currentUser, `liked your thread "${post.content.slice(0, 30)}..."`, post.id)
+      pushNotification('LIKE', currentUser, `liked your thread "${post.content.slice(0, 30)}..."`, post.id, post.user_id)
     }
   } else {
     post.like_count--
@@ -701,11 +745,12 @@ function toggleLikePost(post) {
 }
 
 function toggleRepost(post) {
+  if (!checkAuth()) return
   post.is_reposted = !post.is_reposted
   if (post.is_reposted) {
     post.repost_count++
     if (post.user_id !== currentUser.id) {
-      pushNotification('QUOTE', currentUser, `reposted your thread "${post.content.slice(0, 30)}..."`, post.id)
+      pushNotification('QUOTE', currentUser, `reposted your thread "${post.content.slice(0, 30)}..."`, post.id, post.user_id)
     }
   } else {
     post.repost_count--
@@ -713,41 +758,62 @@ function toggleRepost(post) {
 }
 
 function toggleBookmark(post) {
+  if (!checkAuth()) return
   post.is_bookmarked = !post.is_bookmarked
 }
 
 function votePoll(post, optionId) {
+  if (!checkAuth()) return
   if (!post.poll) return
   const option = post.poll.options.find(o => o.id === optionId)
   if (!option) return
 
-  if (post.poll.user_voted_option_id === optionId) return
-
-  if (!post.poll.allow_multiple && post.poll.user_voted_option_id) {
-    const prevOption = post.poll.options.find(o => o.id === post.poll.user_voted_option_id)
-    if (prevOption) prevOption.vote_count--
-    post.poll.total_votes--
+  if (!post.poll.user_voted_option_ids) {
+    post.poll.user_voted_option_ids = post.poll.user_voted_option_id ? [post.poll.user_voted_option_id] : []
   }
 
-  option.vote_count++
-  post.poll.total_votes++
-  post.poll.user_voted_option_id = optionId
+  if (post.poll.allow_multiple) {
+    const idx = post.poll.user_voted_option_ids.indexOf(optionId)
+    if (idx >= 0) {
+      post.poll.user_voted_option_ids.splice(idx, 1)
+      option.vote_count = Math.max(0, option.vote_count - 1)
+      post.poll.total_votes = Math.max(0, post.poll.total_votes - 1)
+    } else {
+      post.poll.user_voted_option_ids.push(optionId)
+      option.vote_count++
+      post.poll.total_votes++
+    }
+  } else {
+    if (post.poll.user_voted_option_id === optionId) return
+    if (post.poll.user_voted_option_id) {
+      const prevOption = post.poll.options.find(o => o.id === post.poll.user_voted_option_id)
+      if (prevOption) prevOption.vote_count = Math.max(0, prevOption.vote_count - 1)
+      post.poll.total_votes = Math.max(0, post.poll.total_votes - 1)
+    }
+    option.vote_count++
+    post.poll.total_votes++
+    post.poll.user_voted_option_id = optionId
+    post.poll.user_voted_option_ids = [optionId]
+  }
 }
 
 function followUser(targetUser) {
+  if (!checkAuth()) return
   targetUser.is_following = true
   targetUser.followers_count++
   currentUser.following_count++
-  pushNotification('FOLLOW', currentUser, 'started following you')
+  pushNotification('FOLLOW', currentUser, 'started following you', null, targetUser.id)
 }
 
 function unfollowUser(targetUser) {
+  if (!checkAuth()) return
   targetUser.is_following = false
   targetUser.followers_count--
   currentUser.following_count--
 }
 
 function blockUser(targetUser) {
+  if (!checkAuth()) return
   targetUser.is_blocked = true
   if (!moderation.blockedUsers.some(u => u.id === targetUser.id)) {
     moderation.blockedUsers.push(targetUser)
@@ -755,6 +821,7 @@ function blockUser(targetUser) {
 }
 
 function muteUser(targetUser) {
+  if (!checkAuth()) return
   targetUser.is_muted = true
   if (!moderation.mutedUsers.some(u => u.id === targetUser.id)) {
     moderation.mutedUsers.push(targetUser)
@@ -762,6 +829,7 @@ function muteUser(targetUser) {
 }
 
 function restrictUser(targetUser) {
+  if (!checkAuth()) return
   targetUser.is_restricted = true
   if (!moderation.restrictedUsers.some(u => u.id === targetUser.id)) {
     moderation.restrictedUsers.push(targetUser)
@@ -769,6 +837,7 @@ function restrictUser(targetUser) {
 }
 
 function unrestrictUser(targetUser) {
+  if (!checkAuth()) return
   targetUser.is_restricted = false
   moderation.restrictedUsers = moderation.restrictedUsers.filter(u => u.id !== targetUser.id)
 }
@@ -780,9 +849,11 @@ function hidePost(post) {
 }
 
 function submitReport(reason, description) {
+  if (!checkAuth()) return
   if (!reportTargetItem.value) return
   moderation.reports.unshift({
     id: `rep_${Date.now()}`,
+    type: reportTargetItem.value.username ? 'USER' : 'POST',
     reporter: currentUser.display_name,
     target: reportTargetItem.value.name || reportTargetItem.value.username || reportTargetItem.value.content || 'Reported Item',
     reason,
@@ -794,19 +865,65 @@ function submitReport(reason, description) {
   reportTargetItem.value = null
 }
 
+function reportUser(targetUser, reason = 'OTHER') {
+  if (!checkAuth()) return
+  reportTargetItem.value = targetUser
+  isReportModalOpen.value = true
+}
+
+function updateReportStatus(reportId, newStatus) {
+  const report = moderation.reports.find(r => r.id === reportId)
+  if (report) {
+    report.status = newStatus
+  }
+}
+
 function joinCommunity(comm) {
-  comm.is_joined = true
-  comm.member_count++
+  if (!checkAuth()) return
+  if (comm.is_private) {
+    comm.is_requested = true
+    if (!comm.join_requests) comm.join_requests = []
+    if (!comm.join_requests.some(r => r.id === currentUser.id)) {
+      comm.join_requests.push({ id: currentUser.id, name: currentUser.display_name, username: currentUser.username, avatar: currentUser.avatar })
+    }
+  } else {
+    comm.is_joined = true
+    comm.member_count++
+    if (!comm.members) comm.members = []
+    if (!comm.members.some(m => m.id === currentUser.id)) {
+      comm.members.push({ id: currentUser.id, name: currentUser.display_name, username: currentUser.username, avatar: currentUser.avatar, role: 'MEMBER' })
+    }
+  }
 }
 
 function leaveCommunity(comm) {
+  if (!checkAuth()) return
   comm.is_joined = false
-  comm.member_count--
+  comm.is_requested = false
+  comm.member_count = Math.max(0, comm.member_count - 1)
+  if (comm.members) {
+    comm.members = comm.members.filter(m => m.id !== currentUser.id)
+  }
+}
+
+function approveJoinRequest(comm, user) {
+  if (!comm.join_requests) return
+  comm.join_requests = comm.join_requests.filter(r => r.id !== user.id)
+  if (!comm.members) comm.members = []
+  comm.members.push({ ...user, role: 'MEMBER' })
+  comm.member_count++
+}
+
+function rejectJoinRequest(comm, userId) {
+  if (!comm.join_requests) return
+  comm.join_requests = comm.join_requests.filter(r => r.id !== userId)
 }
 
 function createCommunity(commData) {
+  if (!checkAuth()) return
   const newComm = {
     id: `comm_${Date.now()}`,
+    creator_id: currentUser.id,
     name: commData.name,
     slug: commData.slug || commData.name.toLowerCase().replace(/\s+/g, '-'),
     description: commData.description,
@@ -816,6 +933,11 @@ function createCommunity(commData) {
     member_count: 1,
     post_count: 0,
     is_joined: true,
+    is_requested: false,
+    members: [
+      { id: currentUser.id, name: currentUser.display_name, username: currentUser.username, avatar: currentUser.avatar, role: 'ADMIN' }
+    ],
+    join_requests: [],
     flairs: [
       { id: `flair_${Date.now()}_1`, title: 'General', color: '#50b5ff' },
       { id: `flair_${Date.now()}_2`, title: 'Announcement', color: '#e0245e' }
@@ -826,7 +948,12 @@ function createCommunity(commData) {
   isCreateCommunityModalOpen.value = false
 }
 
-function createGroupChat(groupName, memberUsers) {
+function createGroupChat(groupName, memberUsers = []) {
+  if (!checkAuth()) return
+  const membersList = [
+    { id: currentUser.id, name: currentUser.display_name, username: currentUser.username, avatar: currentUser.avatar, role: 'OWNER' },
+    ...memberUsers.map(m => ({ id: m.id, name: m.display_name || m.name, username: m.username, avatar: m.avatar, role: 'MEMBER' }))
+  ]
   const newGroup = {
     id: `conv_${Date.now()}`,
     type: 'GROUP',
@@ -835,57 +962,57 @@ function createGroupChat(groupName, memberUsers) {
     unread_count: 0,
     last_message: 'Group conversation created',
     last_time: 'Just now',
-    messages: []
+    messages: [],
+    members: membersList
   }
   conversations.unshift(newGroup)
   openMiniChat(newGroup)
   isCreateGroupChatModalOpen.value = false
 }
 
-function createStory(storyData) {
-  let userGroup = stories.find(s => s.user.id === currentUser.id)
-  if (!userGroup) {
-    userGroup = { id: `story_group_${Date.now()}`, user: currentUser, items: [] }
-    stories.unshift(userGroup)
+function addGroupMember(convId, user) {
+  const conv = conversations.find(c => c.id === convId)
+  if (conv && conv.type === 'GROUP') {
+    if (!conv.members) conv.members = []
+    if (!conv.members.some(m => m.id === user.id)) {
+      conv.members.push({ id: user.id, name: user.display_name || user.name, username: user.username, avatar: user.avatar, role: 'MEMBER' })
+    }
   }
-  userGroup.items.unshift({
-    id: `st_${Date.now()}`,
-    type: storyData.type || 'TEXT',
-    mediaUrl: storyData.mediaUrl || null,
-    caption: storyData.caption || '',
-    bg: storyData.bg || 'linear-gradient(135deg, #50b5ff, #00d084)',
-    created_at: 'Just now'
-  })
-  isCreateStoryModalOpen.value = false
 }
 
-function openStoryViewer(storyGroup) {
-  activeStoryGroup.value = storyGroup
-  isStoryViewerOpen.value = true
-}
-
-function deleteCustomFeed(feedId) {
-  const index = customFeeds.findIndex(f => f.id === feedId)
-  if (index !== -1) customFeeds.splice(index, 1)
-}
-
-function editCustomFeed(feedId, name, description) {
-  const feed = customFeeds.find(f => f.id === feedId)
-  if (feed) {
-    feed.name = name
-    feed.description = description
+function kickGroupMember(convId, userId) {
+  const conv = conversations.find(c => c.id === convId)
+  if (conv && conv.type === 'GROUP' && conv.members) {
+    conv.members = conv.members.filter(m => m.id !== userId)
   }
 }
 
 function sendMessage(convId, content, replyToMsg = null, mediaObj = null) {
+  if (!checkAuth()) return
   const conv = conversations.find(c => c.id === convId)
   if (!conv) return
+
+  let replyTo = null
+  let mediaUrl = null
+  let mediaArr = null
+
+  if (replyToMsg && typeof replyToMsg === 'object' && !replyToMsg.id) {
+    replyTo = replyToMsg.reply_to || null
+    mediaUrl = replyToMsg.media_url || null
+    mediaArr = replyToMsg.media || (mediaUrl ? [{ id: `med_${Date.now()}`, url: mediaUrl }] : null)
+  } else {
+    replyTo = replyToMsg ? { id: replyToMsg.id, content: replyToMsg.content } : null
+    if (typeof mediaObj === 'string') mediaUrl = mediaObj
+    else if (mediaObj) { mediaArr = mediaObj; mediaUrl = mediaObj[0]?.url || mediaObj.url }
+  }
+
   const newMsg = {
     id: `msg_${Date.now()}`,
     sender_id: currentUser.id,
     content,
-    reply_to: replyToMsg ? { id: replyToMsg.id, content: replyToMsg.content } : null,
-    media: mediaObj || null,
+    reply_to: replyTo,
+    media_url: mediaUrl,
+    media: mediaArr || (mediaUrl ? [{ id: `med_${Date.now()}`, url: mediaUrl }] : null),
     created_at: 'Just now',
     reactions: []
   }
@@ -893,13 +1020,13 @@ function sendMessage(convId, content, replyToMsg = null, mediaObj = null) {
   conv.last_message = `You: ${content || 'Sent an attachment'}`
   conv.last_time = 'Just now'
 
-  // Push notification if sending to someone else
   if (conv.type === 'DIRECT' && conv.participant && conv.participant.id !== currentUser.id) {
-    pushNotification('MESSAGE', currentUser, `sent you a message: "${content.slice(0, 30)}..."`)
+    pushNotification('MESSAGE', currentUser, `sent you a message: "${content.slice(0, 30)}..."`, null, conv.participant.id)
   }
 }
 
 function addMessageReaction(msg, emoji) {
+  if (!checkAuth()) return
   if (!msg.reactions.includes(emoji)) {
     msg.reactions.push(emoji)
   }
@@ -969,6 +1096,7 @@ export function useThreadsStore() {
     editingPost,
     darkTheme,
     totalUnreadCount,
+    checkAuth,
     toggleDarkTheme,
     createPost,
     openCreatePostWithQuote,
@@ -989,10 +1117,16 @@ export function useThreadsStore() {
     unrestrictUser,
     hidePost,
     submitReport,
+    reportUser,
+    updateReportStatus,
     joinCommunity,
     leaveCommunity,
+    approveJoinRequest,
+    rejectJoinRequest,
     createCommunity,
     createGroupChat,
+    addGroupMember,
+    kickGroupMember,
     createStory,
     openStoryViewer,
     deleteCustomFeed,

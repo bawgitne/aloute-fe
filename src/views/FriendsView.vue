@@ -132,8 +132,8 @@ const searchQuery = ref('')
 
 const otherUsers = computed(() => users.filter(u => u.id !== currentUser.id))
 const followingUsers = computed(() => otherUsers.value.filter(u => u.is_following))
-const followerUsers = computed(() => otherUsers.value.filter(u => !u.is_following))
-const suggestedUsers = computed(() => otherUsers.value.filter(u => !u.is_following))
+const followerUsers = computed(() => otherUsers.value.filter(u => u.is_follower))
+const suggestedUsers = computed(() => otherUsers.value.filter(u => !u.is_following && !u.is_follower))
 
 const filteredList = computed(() => {
   let baseList = otherUsers.value

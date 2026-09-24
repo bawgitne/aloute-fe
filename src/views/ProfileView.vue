@@ -78,10 +78,10 @@ const tabPosts = computed(() => {
     return posts.filter(p => p.user_id === uid && !p.parent_post_id)
   }
   if (currentTab.value === 'replies') {
-    return posts.filter(p => p.user_id === uid || p.replies?.some(r => r.user_id === uid))
+    return posts.filter(p => (p.replies && p.replies.some(r => r.user_id === uid)) || (p.user_id === uid && p.parent_post_id))
   }
   if (currentTab.value === 'reposts') {
-    return posts.filter(p => p.is_reposted && p.user_id === uid)
+    return posts.filter(p => p.is_reposted || (p.quoted_post && p.user_id === uid))
   }
   if (currentTab.value === 'media') {
     return posts.filter(p => p.user_id === uid && p.media && p.media.length)

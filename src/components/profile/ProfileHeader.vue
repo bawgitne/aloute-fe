@@ -49,6 +49,9 @@
                 <button class="safety-item text-danger" @click="blockUser(user)">
                   <i class="fa-solid fa-user-slash"></i> Block @{{ user.username }}
                 </button>
+                <button class="safety-item text-amber-400" @click="reportUser(user)">
+                  <i class="fa-solid fa-flag"></i> Báo cáo @{{ user.username }}
+                </button>
               </div>
             </template>
           </div>
@@ -119,7 +122,8 @@ const {
   followUser,
   unfollowUser,
   blockUser,
-  muteUser
+  muteUser,
+  reportUser
 } = useThreadsStore()
 
 const showEditModal = ref(false)

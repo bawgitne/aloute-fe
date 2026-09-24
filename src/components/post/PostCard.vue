@@ -67,7 +67,7 @@
     <!-- Post Body Content -->
     <div class="post-body">
       <!-- Formatted Post Text with parsed Mentions and Hashtags -->
-      <div class="post-text whitespace-pre-wrap" v-html="formattedContent"></div>
+      <div class="post-text whitespace-pre-wrap" v-html="formattedContent" @click="handleTextClick"></div>
 
       <!-- Topic Tags -->
       <div v-if="post.topics && post.topics.length" class="topic-tags">
@@ -199,14 +199,40 @@ const isAuthor = computed(() => {
 const isPostHidden = computed(() => store.moderation.hiddenPosts.includes(props.post.id))
 
 const canReply = computed(() => {
-  if (props.post.allow_reply === 'none') return false
+  const perm = (props.post.allow_reply || 'EVERYONE').toUpperCase()
+  if (perm === 'NONE') return isAuthor.value
+  if (perm === 'EVERYONE') return true
+  if (perm === 'FOLLOWERS') {
+    return isAuthor.value || props.post.user?.is_following || store.currentUser.following?.includes(props.post.user_id)
+  }
+  if (perm === 'MENTIONED') {
+    return isAuthor.value || (props.post.content && props.post.content.includes('@' + store.currentUser.username))
+  }
   return true
 })
 
 const canQuote = computed(() => {
-  if (props.post.allow_quote === 'none') return false
+  const perm = (props.post.allow_quote || 'EVERYONE').toUpperCase()
+  if (perm === 'NONE') return isAuthor.value
+  if (perm === 'EVERYONE') return true
+  if (perm === 'FOLLOWERS') {
+    return isAuthor.value || props.post.user?.is_following || store.currentUser.following?.includes(props.post.user_id)
+  }
   return true
 })
+
+function handleTextClick(e) {
+  const target = e.target
+  if (target && target.tagName === 'SPAN' && target.dataset.mention) {
+    e.stopPropagation()
+    const username = target.dataset.mention
+    const foundUser = store.users.find(u => u.username === username)
+    if (foundUser) {
+      store.selectedProfileUser = foundUser
+      store.activeTab = 'profile'
+    }
+  }
+}
 
 // Mention and Hashtag parsing
 const formattedContent = computed(() => {
@@ -216,8 +242,8 @@ const formattedContent = computed(() => {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 
-  // Parse @username into styled link
-  text = text.replace(/@([a-zA-Z0-9_]+)/g, '<span class="text-indigo-400 font-semibold cursor-pointer hover:underline">@$1</span>')
+  // Parse @username into styled link with data-mention attribute
+  text = text.replace(/@([a-zA-Z0-9_]+)/g, '<span data-mention="$1" class="text-indigo-400 font-semibold cursor-pointer hover:underline">@$1</span>')
   // Parse #hashtag into styled link
   text = text.replace(/#([a-zA-Z0-9_]+)/g, '<span class="text-purple-400 font-semibold cursor-pointer hover:underline">#$1</span>')
 

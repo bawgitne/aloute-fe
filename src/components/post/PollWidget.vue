@@ -11,8 +11,8 @@
         :key="option.id"
         class="poll-option-item"
         :class="{
-          selected: poll.user_voted_option_id === option.id,
-          voted: !!poll.user_voted_option_id
+          selected: isOptionSelected(option.id),
+          voted: hasVoted
         }"
         @click="handleVote(option.id)"
       >
@@ -20,12 +20,12 @@
         <div class="option-content">
           <div class="option-left">
             <span class="radio-indicator">
-              <i v-if="poll.user_voted_option_id === option.id" class="fa-solid fa-circle-check"></i>
-              <i v-else class="fa-regular fa-circle"></i>
+              <i v-if="isOptionSelected(option.id)" class="fa-solid fa-square-check text-indigo-400"></i>
+              <i v-else class="fa-regular fa-square"></i>
             </span>
             <span class="option-text">{{ option.text }}</span>
           </div>
-          <span v-if="poll.user_voted_option_id" class="option-percent">
+          <span v-if="hasVoted" class="option-percent">
             {{ getPercentage(option.vote_count) }}%
           </span>
         </div>
@@ -33,15 +33,17 @@
     </div>
 
     <div class="poll-meta">
-      <small>{{ poll.total_votes }} votes total</small>
-      <small v-if="!poll.allow_multiple" class="single-choice-badge">
-        <i class="fa-solid fa-lock"></i> Single choice
+      <small>{{ poll.total_votes }} lượt bình chọn</small>
+      <small class="single-choice-badge">
+        <i class="fa-solid" :class="poll.allow_multiple ? 'fa-square-check text-indigo-400' : 'fa-lock'"></i>
+        {{ poll.allow_multiple ? 'Cho phép chọn nhiều' : 'Lựa chọn duy nhất' }}
       </small>
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
 const props = defineProps({
@@ -49,7 +51,18 @@ const props = defineProps({
 })
 
 const { votePoll } = useThreadsStore()
-const poll = props.post.poll
+const poll = computed(() => props.post.poll).value
+
+const hasVoted = computed(() => {
+  if (!poll) return false
+  return !!poll.user_voted_option_id || (poll.user_voted_option_ids && poll.user_voted_option_ids.length > 0)
+})
+
+function isOptionSelected(optionId) {
+  if (!poll) return false
+  if (poll.user_voted_option_id === optionId) return true
+  return poll.user_voted_option_ids && poll.user_voted_option_ids.includes(optionId)
+}
 
 function getPercentage(voteCount) {
   if (!poll || !poll.total_votes) return 0

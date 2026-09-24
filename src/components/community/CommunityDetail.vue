@@ -10,15 +10,15 @@
           <img :src="community.avatar" class="avatar avatar-xl detail-avatar" />
           <div class="detail-action-buttons">
             <!-- Admin Edit Button -->
-            <button class="btn-outline px-3 py-1.5 text-xs text-indigo-400 border-indigo-500/40 hover:bg-indigo-500/10 rounded-xl font-semibold" @click="showAdminModal = true">
+            <button v-if="isCommunityAdmin" class="btn-outline px-3 py-1.5 text-xs text-indigo-400 border-indigo-500/40 hover:bg-indigo-500/10 rounded-xl font-semibold" @click="showAdminModal = true">
               <i class="fa-solid fa-user-shield"></i> Quản trị cộng đồng
             </button>
             <button
               class="btn-primary"
-              :class="{ 'btn-outline': community.is_joined }"
+              :class="{ 'btn-outline': community.is_joined || community.is_requested }"
               @click="toggleJoin"
             >
-              {{ community.is_joined ? 'Đã tham gia' : 'Tham gia cộng đồng' }}
+              {{ community.is_joined ? 'Đã tham gia' : (community.is_private && community.is_requested) ? 'Đã gửi yêu cầu' : community.is_private ? 'Yêu cầu tham gia' : 'Tham gia cộng đồng' }}
             </button>
             <button class="btn-primary" @click="handleCreateCommunityPost">
               <i class="fa-solid fa-plus"></i> Đăng bài trong c/{{ community.slug }}
@@ -48,22 +48,71 @@
 
     <!-- Admin Settings Modal -->
     <div v-if="showAdminModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 text-white space-y-4">
+      <div class="w-full max-w-xl bg-gray-900 border border-gray-800 rounded-2xl p-6 text-white space-y-4 max-h-[85vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b border-gray-800 pb-3">
           <h3 class="font-bold text-lg"><i class="fa-solid fa-shield-halved text-indigo-400"></i> Quản Trị Cộng Đồng</h3>
           <button @click="showAdminModal = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">Tên Cộng Đồng</label>
-          <input type="text" v-model="adminEditForm.name" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs" />
+
+        <!-- Modal Admin Tabs -->
+        <div class="flex border-b border-gray-800 gap-4 text-xs font-bold">
+          <button @click="adminTab = 'settings'" class="pb-2 border-b-2" :class="adminTab === 'settings' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400'">Cấu Hình</button>
+          <button @click="adminTab = 'requests'" class="pb-2 border-b-2 flex items-center gap-1.5" :class="adminTab === 'requests' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400'">
+            Yêu Cầu Tham Gia
+            <span v-if="community.join_requests && community.join_requests.length" class="px-1.5 py-0.5 rounded-full bg-red-500 text-[10px] text-white">{{ community.join_requests.length }}</span>
+          </button>
+          <button @click="adminTab = 'members'" class="pb-2 border-b-2" :class="adminTab === 'members' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400'">Thành Viên</button>
         </div>
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">Mô tả</label>
-          <textarea v-model="adminEditForm.description" rows="3" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-xs resize-none"></textarea>
+
+        <!-- Tab 1: Settings -->
+        <div v-if="adminTab === 'settings'" class="space-y-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Tên Cộng Đồng</label>
+            <input type="text" v-model="adminEditForm.name" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Mô tả</label>
+            <textarea v-model="adminEditForm.description" rows="3" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-xs resize-none"></textarea>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button @click="saveAdminSettings" class="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-bold text-white">Lưu Thay Đổi</button>
+          </div>
         </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button @click="showAdminModal = false" class="px-4 py-2 text-xs text-gray-400">Hủy</button>
-          <button @click="saveAdminSettings" class="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-bold text-white">Lưu Thay Đổi</button>
+
+        <!-- Tab 2: Join Requests -->
+        <div v-else-if="adminTab === 'requests'" class="space-y-2">
+          <div v-if="community.join_requests && community.join_requests.length" class="space-y-2">
+            <div v-for="reqUser in community.join_requests" :key="reqUser.id" class="flex items-center justify-between p-3 rounded-xl bg-gray-950 border border-gray-800 text-xs">
+              <div class="flex items-center gap-2">
+                <img :src="reqUser.avatar" class="w-7 h-7 rounded-full object-cover" />
+                <div>
+                  <strong class="block text-white">{{ reqUser.display_name }}</strong>
+                  <span class="text-gray-400">@{{ reqUser.username }}</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button @click="store.approveJoinRequest(community.id, reqUser.id)" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-[11px]">Chấp nhận</button>
+                <button @click="store.rejectJoinRequest(community.id, reqUser.id)" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg text-[11px]">Từ chối</button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="py-8 text-center text-xs text-gray-500">
+            Không có yêu cầu tham gia nào đang chờ duyệt.
+          </div>
+        </div>
+
+        <!-- Tab 3: Members -->
+        <div v-else-if="adminTab === 'members'" class="space-y-2">
+          <div v-for="u in store.users" :key="u.id" class="flex items-center justify-between p-2.5 rounded-xl bg-gray-950 border border-gray-800 text-xs">
+            <div class="flex items-center gap-2">
+              <img :src="u.avatar" class="w-7 h-7 rounded-full object-cover" />
+              <div>
+                <strong class="block text-white">{{ u.display_name }}</strong>
+                <span class="text-gray-400">@{{ u.username }}</span>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[10px]">THÀNH VIÊN</span>
+          </div>
         </div>
       </div>
     </div>
@@ -159,6 +208,13 @@ const store = useThreadsStore()
 const community = computed(() => store.selectedCommunity)
 const selectedFlair = ref(null)
 const showAdminModal = ref(false)
+const adminTab = ref('settings')
+
+const isCommunityAdmin = computed(() => {
+  if (!community.value) return false
+  if (!store.currentUser) return false
+  return community.value.creator_id === store.currentUser.id || community.value.my_role === 'ADMIN' || community.value.my_role === 'MODERATOR' || store.currentUser.role === 'ADMIN'
+})
 
 const adminEditForm = reactive({
   name: '',

@@ -5,16 +5,16 @@ import { useThreadsStore } from '../../composables/useThreadsStore'
 const store = useThreadsStore()
 
 const content = ref('')
-const allowReply = ref('everyone')
-const allowQuote = ref('everyone')
+const allowReply = ref('EVERYONE')
+const allowQuote = ref('EVERYONE')
 const mediaType = ref('IMAGE')
 const mediaUrl = ref('')
 
 watch(() => store.editingPost, (newPost) => {
   if (newPost) {
     content.value = newPost.content || ''
-    allowReply.value = newPost.allow_reply || 'everyone'
-    allowQuote.value = newPost.allow_quote || 'everyone'
+    allowReply.value = (newPost.allow_reply || 'EVERYONE').toUpperCase()
+    allowQuote.value = (newPost.allow_quote || 'EVERYONE').toUpperCase()
     mediaUrl.value = newPost.media?.[0]?.url || newPost.media_url || ''
     mediaType.value = newPost.media?.[0]?.type || newPost.media_type || 'IMAGE'
   }
@@ -88,18 +88,18 @@ const handleClose = () => {
           <div>
             <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Ai có thể trả lời</label>
             <select v-model="allowReply" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="everyone">Mọi người</option>
-              <option value="follows">Người bạn theo dõi</option>
-              <option value="mentioned">Người được nhắc đến</option>
-              <option value="none">Không ai</option>
+              <option value="EVERYONE">Mọi người</option>
+              <option value="FOLLOWERS">Người bạn theo dõi / Theo dõi bạn</option>
+              <option value="MENTIONED">Người được nhắc đến</option>
+              <option value="NONE">Không ai</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Ai có thể trích dẫn</label>
             <select v-model="allowQuote" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="everyone">Mọi người</option>
-              <option value="follows">Người bạn theo dõi</option>
-              <option value="none">Không ai</option>
+              <option value="EVERYONE">Mọi người</option>
+              <option value="FOLLOWERS">Người bạn theo dõi / Theo dõi bạn</option>
+              <option value="NONE">Không ai</option>
             </select>
           </div>
         </div>
