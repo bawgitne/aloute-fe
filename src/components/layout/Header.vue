@@ -5,9 +5,9 @@
       <div class="header-left">
         <a href="#" class="brand-logo" @click.prevent="activeTab = 'feed'">
           <div class="logo-icon">
-            <i class="fa-solid fa-at"></i>
+            <i class="fa-solid fa-rocket"></i>
           </div>
-          <span class="logo-text">SocialV <small>Threads</small></span>
+          <span class="logo-text">Rocket</span>
         </a>
 
         <div class="header-search">
@@ -18,349 +18,374 @@
             placeholder="Search users, posts, topics, communities..."
             @focus="showSearchResults = true"
           />
-          <div v-if="showSearchResults && searchQuery" class="search-dropdown card-social">
-            <div class="search-section-title">Topics</div>
-            <div
-              v-for="topic in filteredTopics"
-              :key="topic.id"
-              class="search-item"
-              @click="selectTopicSearch(topic.name)"
-            >
-              <i class="fa-solid fa-hashtag"></i> #{{ topic.name }}
-              <span class="text-muted">({{ topic.post_count }} posts)</span>
-            </div>
-            <div class="search-section-title">Users</div>
-            <div
-              v-for="user in filteredUsers"
-              :key="user.id"
-              class="search-item"
-              @click="selectUserSearch(user)"
-            >
-              <img :src="user.avatar" class="avatar avatar-sm" />
-              <div>
-                <strong>{{ user.display_name }}</strong>
-                <small>@{{ user.username }}</small>
+            <div v-if="showSearchResults && searchQuery" class="search-dropdown card-social">
+              <!-- Topics Section -->
+              <div v-if="filteredTopics.length" class="search-section-title">Chủ đề</div>
+              <div
+                v-for="topic in filteredTopics"
+                :key="topic.id"
+                class="search-item"
+                @click="selectTopicSearch(topic.name)"
+              >
+                <i class="fa-solid fa-hashtag"></i> #{{ topic.name }}
+                <span class="text-muted">({{ topic.post_count }} bài)</span>
+              </div>
+
+              <!-- Users Section -->
+              <div v-if="filteredUsers.length" class="search-section-title">Người dùng</div>
+              <div
+                v-for="user in filteredUsers"
+                :key="user.id"
+                class="search-item"
+                @click="selectUserSearch(user)"
+              >
+                <img :src="user.avatar" class="avatar avatar-sm" />
+                <div>
+                  <strong>{{ user.display_name }}</strong>
+                  <small>@{{ user.username }}</small>
+                </div>
+              </div>
+
+              <!-- Communities Section -->
+              <div v-if="filteredCommunities.length" class="search-section-title">Cộng đồng</div>
+              <div
+                v-for="comm in filteredCommunities"
+                :key="comm.id"
+                class="search-item"
+                @click="selectCommunitySearch(comm)"
+              >
+                <img :src="comm.avatar" class="avatar avatar-sm rounded-lg" />
+                <div>
+                  <strong>{{ comm.name }}</strong>
+                  <small>c/{{ comm.slug }}</small>
+                </div>
+              </div>
+
+              <!-- Posts Section -->
+              <div v-if="filteredPosts.length" class="search-section-title">Bài viết</div>
+              <div
+                v-for="post in filteredPosts"
+                :key="post.id"
+                class="search-item text-xs line-clamp-1"
+                @click="selectPostSearch(post)"
+              >
+                <i class="fa-solid fa-align-left text-indigo-400"></i>
+                <span class="truncate">{{ post.content }}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Center: Navigation Bar -->
-      <!-- Center: Navigation Bar -->
-      <nav class="header-nav">
-        <button
-          class="nav-tab"
-          :class="{ active: activeTab === 'feed' }"
-          @click="activeTab = 'feed'"
-          title="Home Feed"
-        >
-          <i class="fa-solid fa-house"></i>
-          <span class="nav-label">Feed</span>
-        </button>
+        <!-- Center: Navigation Bar -->
+        <nav class="header-nav">
+          <button
+            class="nav-tab"
+            :class="{ active: store.activeTab === 'feed' }"
+            @click="store.activeTab = 'feed'"
+            title="Home Feed"
+          >
+            <i class="fa-solid fa-house"></i>
+            <span class="nav-label">Feed</span>
+          </button>
 
-        <button
-          class="nav-tab"
-          :class="{ active: activeTab === 'communities' }"
-          @click="activeTab = 'communities'"
-          title="Communities"
-        >
-          <i class="fa-solid fa-users-rectangle"></i>
-          <span class="nav-label">Communities</span>
-        </button>
+          <button
+            class="nav-tab"
+            :class="{ active: store.activeTab === 'communities' }"
+            @click="store.activeTab = 'communities'"
+            title="Communities"
+          >
+            <i class="fa-solid fa-users-rectangle"></i>
+            <span class="nav-label">Cộng đồng</span>
+          </button>
 
-        <button
-          class="nav-tab"
-          :class="{ active: activeTab === 'moderation' }"
-          @click="activeTab = 'moderation'"
-          title="Safety & Moderation"
-        >
-          <i class="fa-solid fa-shield-halved"></i>
-          <span class="nav-label">Safety</span>
-        </button>
-      </nav>
+          <button
+            class="nav-tab"
+            :class="{ active: store.activeTab === 'analytics' }"
+            @click="store.activeTab = 'analytics'"
+            title="Thống kê"
+          >
+            <i class="fa-solid fa-chart-line"></i>
+            <span class="nav-label">Phân tích</span>
+          </button>
 
-      <!-- Right: Friends, Notifications, Settings & Profile -->
-      <div class="header-right">
-        <!-- Friends Icon Button (Moved to Right Topbar) -->
-        <button
-          class="btn-icon"
-          :class="{ active: activeTab === 'friends' }"
-          @click="activeTab = 'friends'"
-          title="Friends & Connections"
-        >
-          <i class="fa-solid fa-user-group"></i>
-        </button>
+          <button
+            class="nav-tab"
+            :class="{ active: store.activeTab === 'moderation' }"
+            @click="store.activeTab = 'moderation'"
+            title="Safety & Moderation"
+          >
+            <i class="fa-solid fa-shield-halved"></i>
+            <span class="nav-label">An toàn</span>
+          </button>
+        </nav>
 
-        <!-- Notification Bell Action Button (Facebook Style Pop-up Dropdown) -->
-        <div class="popover-wrapper">
+        <!-- Right: Friends, Notifications, Settings & Profile / Auth -->
+        <div class="header-right">
+          <!-- Login / Auth Button if Guest -->
+          <button
+            v-if="!store.isLoggedIn"
+            @click="store.isAuthModalOpen = true"
+            class="px-3 py-1.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-500 text-white shadow"
+          >
+            Đăng nhập
+          </button>
+
+          <!-- Friends Icon Button -->
           <button
             class="btn-icon"
-            :class="{ active: showNotifMenu }"
-            @click="toggleNotifMenu"
-            title="Notifications"
+            :class="{ active: store.activeTab === 'friends' }"
+            @click="store.activeTab = 'friends'"
+            title="Friends & Connections"
           >
-            <i class="fa-solid fa-bell"></i>
-            <span v-if="unreadNotifsCount" class="badge-dot warning"></span>
+            <i class="fa-solid fa-user-group"></i>
           </button>
 
-          <div v-if="showNotifMenu" class="popover-dropdown notifications-dropdown card-social">
-            <div class="notif-popover-header">
-              <h3>Notifications</h3>
-              <button class="btn-link-sm" @click="markAllNotificationsRead">
-                <i class="fa-solid fa-check-double"></i> Mark all read
-              </button>
-            </div>
+          <!-- Notification Bell Action Button -->
+          <div class="popover-wrapper">
+            <button
+              class="btn-icon"
+              :class="{ active: showNotifMenu }"
+              @click="toggleNotifMenu"
+              title="Notifications"
+            >
+              <i class="fa-solid fa-bell"></i>
+              <span v-if="unreadNotifsCount" class="badge-dot warning"></span>
+            </button>
 
-            <!-- Facebook Style Filter Pills -->
-            <div class="notif-filter-pills">
-              <button
-                class="notif-pill"
-                :class="{ active: notifFilter === 'all' }"
-                @click="notifFilter = 'all'"
-              >
-                All
-              </button>
-              <button
-                class="notif-pill"
-                :class="{ active: notifFilter === 'unread' }"
-                @click="notifFilter = 'unread'"
-              >
-                Unread
-                <span v-if="unreadNotifsCount" class="unread-count-pill">{{ unreadNotifsCount }}</span>
-              </button>
-            </div>
-
-            <!-- Notification Items List -->
-            <div class="notif-list-scroll">
-              <div
-                v-for="notif in filteredNotificationsList"
-                :key="notif.id"
-                class="notif-item-row"
-                :class="{ unread: !notif.is_read }"
-                @click="handleNotifClick(notif)"
-              >
-                <div class="notif-avatar-wrapper">
-                  <img :src="notif.actor?.avatar || defaultAvatar" class="avatar avatar-md" />
-                  <span class="notif-type-badge" :class="getNotifBadgeClass(notif.type)">
-                    <i :class="getNotifIconClass(notif.type)"></i>
-                  </span>
-                </div>
-
-                <div class="notif-text-wrapper">
-                  <p class="notif-text-content">
-                    <strong>{{ notif.actor?.name || notif.actor?.username }}</strong> {{ notif.message }}
-                  </p>
-                  <span class="notif-time">{{ notif.created_at || '5m ago' }}</span>
-                </div>
-
-                <span v-if="!notif.is_read" class="unread-blue-dot"></span>
+            <div v-if="showNotifMenu" class="popover-dropdown notifications-dropdown card-social">
+              <div class="notif-popover-header">
+                <h3>Thông báo</h3>
+                <button class="btn-link-sm" @click="store.markAllNotificationsRead">
+                  <i class="fa-solid fa-check-double"></i> Đọc tất cả
+                </button>
               </div>
 
-              <div v-if="!filteredNotificationsList.length" class="empty-notif-state">
-                <i class="fa-solid fa-bell-slash"></i>
-                <p>No notifications to display</p>
+              <!-- Filter Pills -->
+              <div class="notif-filter-pills">
+                <button
+                  class="notif-pill"
+                  :class="{ active: notifFilter === 'all' }"
+                  @click="notifFilter = 'all'"
+                >
+                  Tất cả
+                </button>
+                <button
+                  class="notif-pill"
+                  :class="{ active: notifFilter === 'unread' }"
+                  @click="notifFilter = 'unread'"
+                >
+                  Chưa đọc
+                  <span v-if="unreadNotifsCount" class="unread-count-pill">{{ unreadNotifsCount }}</span>
+                </button>
               </div>
-            </div>
 
-            <div class="notif-popover-footer">
-              <button class="btn-full-width" @click="goToNotificationsTab">
-                See all notifications
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Settings Dropdown Toggle -->
-        <div class="popover-wrapper">
-          <button class="btn-icon" @click="toggleSettingsMenu" title="Display Settings">
-            <i class="fa-solid fa-gear"></i>
-          </button>
-          <div v-if="showSettingsMenu" class="popover-dropdown settings-dropdown card-social">
-            <div class="popover-header">
-              <h4>Display & Settings</h4>
-            </div>
-
-            <!-- Dark Theme Toggle Option -->
-            <div class="setting-option-row">
-              <span>Dark Theme Mode</span>
-              <label class="switch">
-                <input type="checkbox" :checked="darkTheme" @change="toggleDarkTheme" />
-                <span class="slider round"></span>
-              </label>
-            </div>
-
-            <!-- Mini Profile Card Option -->
-            <div class="setting-option-row">
-              <span>Show Mini Profile Card on Sidebar</span>
-              <label class="switch">
-                <input type="checkbox" v-model="showMiniProfileCard" />
-                <span class="slider round"></span>
-              </label>
-            </div>
-
-            <!-- Layout Mode Option -->
-            <div class="setting-option-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; flex-direction: column; align-items: flex-start; gap: 8px;">
-              <span>Comment View & Layout Mode:</span>
-              <div class="mode-toggle-group">
-                <button
-                  class="mode-btn"
-                  :class="{ active: commentDisplayMode === 'left_comments' }"
-                  @click="commentDisplayMode = 'left_comments'"
-                  title="Left Split Mode (Comments on Left, Docked Sidebar)"
+              <!-- Notification Items List -->
+              <div class="notif-list-scroll">
+                <div
+                  v-for="notif in filteredNotificationsList"
+                  :key="notif.id"
+                  class="notif-item-row"
+                  :class="{ unread: !notif.is_read }"
+                  @click="handleNotifClick(notif)"
                 >
-                  <i class="fa-solid fa-table-columns rotate-180"></i> Left Split
-                </button>
-                <button
-                  class="mode-btn"
-                  :class="{ active: commentDisplayMode === 'sidebar' }"
-                  @click="commentDisplayMode = 'sidebar'"
-                  title="Side Panel Column Mode (Right)"
-                >
-                  <i class="fa-solid fa-table-columns"></i> Side Panel
-                </button>
-                <button
-                  class="mode-btn"
-                  :class="{ active: commentDisplayMode === 'popup' }"
-                  @click="commentDisplayMode = 'popup'"
-                  title="Pop-up Modal Mode"
-                >
-                  <i class="fa-solid fa-window-restore"></i> Pop-up
+                  <div class="notif-avatar-wrapper">
+                    <img :src="notif.actor?.avatar || defaultAvatar" class="avatar avatar-md" />
+                    <span class="notif-type-badge" :class="getNotifBadgeClass(notif.type)">
+                      <i :class="getNotifIconClass(notif.type)"></i>
+                    </span>
+                  </div>
+
+                  <div class="notif-text-wrapper">
+                    <p class="notif-text-content">
+                      <strong>{{ notif.actor?.display_name || notif.actor?.username }}</strong> {{ notif.message }}
+                    </p>
+                    <span class="notif-time">{{ notif.created_at || 'Vừa xong' }}</span>
+                  </div>
+
+                  <span v-if="!notif.is_read" class="unread-blue-dot"></span>
+                </div>
+
+                <div v-if="!filteredNotificationsList.length" class="empty-notif-state">
+                  <i class="fa-solid fa-bell-slash"></i>
+                  <p>Không có thông báo nào</p>
+                </div>
+              </div>
+
+              <div class="notif-popover-footer">
+                <button class="btn-full-width" @click="goToNotificationsTab">
+                  Xem tất cả thông báo
                 </button>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- User Profile Avatar -->
-        <div class="profile-menu-wrapper" @click="openMyProfile">
-          <div class="avatar-wrapper">
-            <img :src="currentUser.avatar" class="avatar avatar-md" />
-            <span class="avatar-online-dot"></span>
+          <!-- Settings Dropdown Toggle -->
+          <div class="popover-wrapper">
+            <button class="btn-icon" @click="toggleSettingsMenu" title="Display Settings">
+              <i class="fa-solid fa-gear"></i>
+            </button>
+            <div v-if="showSettingsMenu" class="popover-dropdown settings-dropdown card-social">
+              <div class="popover-header">
+                <h4>Cài đặt & Giao diện</h4>
+              </div>
+
+              <!-- Dark Theme Toggle Option -->
+              <div class="setting-option-row">
+                <span>Chế độ Tối (Dark Mode)</span>
+                <label class="switch">
+                  <input type="checkbox" :checked="store.darkTheme" @change="store.toggleDarkTheme" />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div v-if="store.isLoggedIn" class="setting-option-row" style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                <button @click="store.isLoggedIn = false; showSettingsMenu = false" class="text-xs text-red-400 font-bold hover:underline">
+                  <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Profile Avatar -->
+          <div v-if="store.isLoggedIn" class="profile-menu-wrapper" @click="openMyProfile">
+            <div class="avatar-wrapper">
+              <img :src="store.currentUser.avatar" class="avatar avatar-md" />
+              <span class="avatar-online-dot"></span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </header>
-</template>
+    </header>
+  </template>
 
-<script setup>
-import { ref, computed } from 'vue'
-import { useThreadsStore } from '@/composables/useThreadsStore'
+  <script setup>
+  import { ref, computed } from 'vue'
+  import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  currentUser,
-  users,
-  topics,
-  notifications,
-  conversations,
-  showMiniProfileCard,
-  commentDisplayMode,
-  activeTab,
-  activeFeedFilter,
-  selectedProfileUser,
-  isCreatePostModalOpen,
-  darkTheme,
-  toggleDarkTheme,
-  markAllNotificationsRead,
-  markNotificationRead
-} = useThreadsStore()
+  const store = useThreadsStore()
 
-const searchQuery = ref('')
-const showSearchResults = ref(false)
-const showSettingsMenu = ref(false)
-const showNotifMenu = ref(false)
-const notifFilter = ref('all')
+  const searchQuery = ref('')
+  const showSearchResults = ref(false)
+  const showSettingsMenu = ref(false)
+  const showNotifMenu = ref(false)
+  const notifFilter = ref('all')
 
-const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+  const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
 
-const unreadNotifsCount = computed(() => notifications.filter(n => !n.is_read).length)
-const unreadMessagesCount = computed(() => conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0))
+  const unreadNotifsCount = computed(() => store.notifications.filter(n => !n.is_read).length)
 
-const filteredNotificationsList = computed(() => {
-  if (notifFilter.value === 'unread') {
-    return notifications.filter(n => !n.is_read)
+  const filteredNotificationsList = computed(() => {
+    if (notifFilter.value === 'unread') {
+      return store.notifications.filter(n => !n.is_read)
+    }
+    return store.notifications
+  })
+
+  const filteredTopics = computed(() => {
+    if (!searchQuery.value) return store.topics
+    return store.topics.filter(t => t.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
+  })
+
+  const filteredUsers = computed(() => {
+    if (!searchQuery.value) return store.users
+    return store.users.filter(u =>
+      u.display_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      u.username.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+  })
+
+  const filteredCommunities = computed(() => {
+    if (!searchQuery.value) return store.communities
+    return store.communities.filter(c =>
+      c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      c.slug.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+  })
+
+  const filteredPosts = computed(() => {
+    if (!searchQuery.value) return []
+    const q = searchQuery.value.toLowerCase()
+    return store.posts.filter(p => p.content && p.content.toLowerCase().includes(q)).slice(0, 5)
+  })
+
+  function toggleNotifMenu() {
+    showNotifMenu.value = !showNotifMenu.value
+    if (showNotifMenu.value) {
+      showSettingsMenu.value = false
+    }
   }
-  return notifications
-})
 
-const filteredTopics = computed(() => {
-  if (!searchQuery.value) return topics
-  return topics.filter(t => t.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
-})
-
-const filteredUsers = computed(() => {
-  if (!searchQuery.value) return users
-  return users.filter(u =>
-    u.display_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    u.username.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-})
-
-function toggleNotifMenu() {
-  showNotifMenu.value = !showNotifMenu.value
-  if (showNotifMenu.value) {
-    showSettingsMenu.value = false
+  function toggleSettingsMenu() {
+    showSettingsMenu.value = !showSettingsMenu.value
+    if (showSettingsMenu.value) {
+      showNotifMenu.value = false
+    }
   }
-}
 
-function toggleSettingsMenu() {
-  showSettingsMenu.value = !showSettingsMenu.value
-  if (showSettingsMenu.value) {
+  function handleNotifClick(notif) {
+    store.markNotificationRead(notif.id)
+    if (notif.type === 'FOLLOW') {
+      store.activeTab = 'friends'
+    } else {
+      store.activeTab = 'feed'
+    }
     showNotifMenu.value = false
   }
-}
 
-function handleNotifClick(notif) {
-  markNotificationRead(notif.id)
-  if (notif.type === 'FOLLOW') {
-    activeTab.value = 'friends'
-  } else {
-    activeTab.value = 'feed'
+  function goToNotificationsTab() {
+    store.activeTab = 'notifications'
+    showNotifMenu.value = false
   }
-  showNotifMenu.value = false
-}
 
-function goToNotificationsTab() {
-  activeTab.value = 'notifications'
-  showNotifMenu.value = false
-}
+  function getNotifBadgeClass(type) {
+    if (type === 'LIKE') return 'badge-like'
+    if (type === 'REPLY' || type === 'COMMENT') return 'badge-reply'
+    if (type === 'FOLLOW') return 'badge-follow'
+    if (type === 'QUOTE' || type === 'REPOST') return 'badge-repost'
+    return 'badge-default'
+  }
 
-function getNotifBadgeClass(type) {
-  if (type === 'LIKE') return 'badge-like'
-  if (type === 'REPLY' || type === 'COMMENT') return 'badge-reply'
-  if (type === 'FOLLOW') return 'badge-follow'
-  if (type === 'QUOTE' || type === 'REPOST') return 'badge-repost'
-  return 'badge-default'
-}
+  function getNotifIconClass(type) {
+    if (type === 'LIKE') return 'fa-solid fa-heart'
+    if (type === 'REPLY' || type === 'COMMENT') return 'fa-solid fa-comment'
+    if (type === 'FOLLOW') return 'fa-solid fa-user-plus'
+    if (type === 'QUOTE' || type === 'REPOST') return 'fa-solid fa-quote-left'
+    return 'fa-solid fa-bell'
+  }
 
-function getNotifIconClass(type) {
-  if (type === 'LIKE') return 'fa-solid fa-heart'
-  if (type === 'REPLY' || type === 'COMMENT') return 'fa-solid fa-comment'
-  if (type === 'FOLLOW') return 'fa-solid fa-user-plus'
-  if (type === 'QUOTE' || type === 'REPOST') return 'fa-solid fa-quote-left'
-  return 'fa-solid fa-bell'
-}
+  function selectTopicSearch(name) {
+    store.activeFeedFilter = `topic_${name}`
+    store.activeTab = 'feed'
+    showSearchResults.value = false
+    searchQuery.value = ''
+  }
 
-function selectTopicSearch(name) {
-  activeFeedFilter.value = `topic_${name}`
-  activeTab.value = 'feed'
-  showSearchResults.value = false
-  searchQuery.value = ''
-}
+  function selectUserSearch(user) {
+    store.selectedProfileUser = user
+    store.activeTab = 'profile'
+    showSearchResults.value = false
+    searchQuery.value = ''
+  }
 
-function selectUserSearch(user) {
-  selectedProfileUser.value = user
-  activeTab.value = 'profile'
-  showSearchResults.value = false
-  searchQuery.value = ''
-}
+  function selectCommunitySearch(comm) {
+    store.selectedCommunity = comm
+    store.activeTab = 'community_detail'
+    showSearchResults.value = false
+    searchQuery.value = ''
+  }
 
-function openMyProfile() {
-  selectedProfileUser.value = currentUser
-  activeTab.value = 'profile'
-}
-</script>
+  function selectPostSearch(post) {
+    store.selectedPostForComments = post
+    store.activeTab = 'feed'
+    showSearchResults.value = false
+    searchQuery.value = ''
+  }
+
+  function openMyProfile() {
+    store.selectedProfileUser = store.currentUser
+    store.activeTab = 'profile'
+  }
+  </script>
 
 <style scoped>
 .social-header {

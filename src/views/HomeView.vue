@@ -13,21 +13,21 @@
     <div class="feed-stream-column">
       <!-- Story Highlights Bar -->
       <div class="card-social story-bar">
-        <div class="story-item create-story">
+        <div class="story-item create-story cursor-pointer" @click="store.isCreateStoryModalOpen = true">
           <div class="avatar-wrapper">
-            <img :src="currentUser.avatar" class="avatar avatar-lg" />
+            <img :src="store.currentUser.avatar" class="avatar avatar-lg" />
             <span class="add-story-plus"><i class="fa-solid fa-plus"></i></span>
           </div>
-          <small>Add Story</small>
+          <small>Tạo tin mới</small>
         </div>
 
         <div
-          v-for="user in users"
+          v-for="user in store.users"
           :key="user.id"
-          class="story-item"
-          @click="openProfile(user)"
+          class="story-item cursor-pointer"
+          @click="store.openStoryViewer({ user, items: [{ id: 'st_1', media_url: user.avatar, media_type: 'IMAGE', caption: `Story từ @${user.username}` }] })"
         >
-          <div class="story-avatar-ring">
+          <div class="story-avatar-ring border-2 border-indigo-500 rounded-full p-0.5">
             <img :src="user.avatar" class="avatar avatar-lg" />
           </div>
           <small class="truncate-name">{{ user.display_name }}</small>
@@ -147,6 +147,7 @@ import { useThreadsStore } from '@/composables/useThreadsStore'
 import PostCard from '@/components/post/PostCard.vue'
 import PostCommentsSidePanel from '@/components/post/PostCommentsSidePanel.vue'
 
+const store = useThreadsStore()
 const {
   currentUser,
   users,
@@ -161,7 +162,7 @@ const {
   isCreatePostModalOpen,
   followUser,
   unfollowUser
-} = useThreadsStore()
+} = store
 
 const isTopicFilterActive = computed(() => activeFeedFilter.value.startsWith('topic_'))
 

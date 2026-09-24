@@ -1,11 +1,17 @@
 <template>
   <div class="communities-view">
     <div class="card-social page-header">
-      <div class="header-content">
+      <div class="header-content flex justify-between items-center">
         <div>
-          <h2><i class="fa-solid fa-users-rectangle text-success"></i> Communities Hub</h2>
-          <p class="text-muted">Discover and join topic-based social spaces across the platform.</p>
+          <h2><i class="fa-solid fa-users-rectangle text-success"></i> Thư viện Cộng Đồng</h2>
+          <p class="text-muted">Khám phá và tham gia các không gian trao đổi theo chủ đề.</p>
         </div>
+        <button
+          @click="store.isCreateCommunityModalOpen = true"
+          class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-md transition"
+        >
+          <i class="fa-solid fa-plus"></i> Tạo Cộng Đồng
+        </button>
       </div>
     </div>
 
@@ -17,14 +23,14 @@
           :class="{ active: filter === 'all' }"
           @click="filter = 'all'"
         >
-          All Communities
+          Tất cả cộng đồng
         </button>
         <button
           class="tab-btn"
           :class="{ active: filter === 'joined' }"
           @click="filter = 'joined'"
         >
-          My Joined Communities
+          Đã tham gia
         </button>
       </div>
     </div>
@@ -40,7 +46,7 @@
 
     <div v-if="!filteredCommunities.length" class="card-social empty-box">
       <i class="fa-solid fa-users-slash font-32 text-muted"></i>
-      <p>No communities found in this category.</p>
+      <p>Không tìm thấy cộng đồng nào.</p>
     </div>
   </div>
 </template>
@@ -50,12 +56,12 @@ import { ref, computed } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 import CommunityCard from '@/components/community/CommunityCard.vue'
 
-const { communities } = useThreadsStore()
+const store = useThreadsStore()
 const filter = ref('all')
 
 const filteredCommunities = computed(() => {
-  if (filter.value === 'joined') return communities.filter(c => c.is_joined)
-  return communities
+  if (filter.value === 'joined') return store.communities.filter(c => c.is_joined)
+  return store.communities
 })
 </script>
 

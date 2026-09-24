@@ -1,8 +1,8 @@
 <template>
-  <div class="analytics-view">
+  <div class="analytics-view space-y-6 max-w-4xl mx-auto">
     <div class="card-social page-header">
-      <h2><i class="fa-solid fa-chart-line text-primary"></i> Account & Thread Analytics Overview</h2>
-      <p class="text-muted">Real-time performance metrics across your posts, views, and link clicks.</p>
+      <h2><i class="fa-solid fa-chart-line text-primary"></i> Phân Tích Thống Kê Tài Khoản & Bài Viết</h2>
+      <p class="text-muted">Chỉ số hiệu suất thời gian thực dựa trên lượt tương tác, lượt xem và chuyển đổi.</p>
     </div>
 
     <!-- Summary Metric Cards Grid -->
@@ -10,10 +10,10 @@
       <div class="card-social metric-card">
         <div class="metric-header">
           <i class="fa-solid fa-eye text-primary metric-icon"></i>
-          <span class="badge badge-success">+18% vs last week</span>
+          <span class="badge badge-success">+18% tuần này</span>
         </div>
-        <div class="metric-value">{{ totalViews }}</div>
-        <div class="metric-title">Total Thread Views</div>
+        <div class="metric-value">{{ totalViews.toLocaleString() }}</div>
+        <div class="metric-title">Tổng Lượt Xem</div>
       </div>
 
       <div class="card-social metric-card">
@@ -21,8 +21,8 @@
           <i class="fa-solid fa-arrow-pointer text-success metric-icon"></i>
           <span class="badge badge-primary">+24%</span>
         </div>
-        <div class="metric-value">{{ totalClicks }}</div>
-        <div class="metric-title">Link Clicks</div>
+        <div class="metric-value">{{ totalClicks.toLocaleString() }}</div>
+        <div class="metric-title">Lượt Click Link</div>
       </div>
 
       <div class="card-social metric-card">
@@ -30,43 +30,50 @@
           <i class="fa-solid fa-heart text-danger metric-icon"></i>
           <span class="badge badge-warning">+12%</span>
         </div>
-        <div class="metric-value">{{ totalLikes }}</div>
-        <div class="metric-title">Total Likes</div>
+        <div class="metric-value">{{ totalLikes.toLocaleString() }}</div>
+        <div class="metric-title">Tổng Lượt Thích</div>
       </div>
 
       <div class="card-social metric-card">
         <div class="metric-header">
           <i class="fa-solid fa-bolt text-warning metric-icon"></i>
-          <span class="badge badge-success">High</span>
+          <span class="badge badge-success">Thực tế</span>
         </div>
-        <div class="metric-value">5.8%</div>
-        <div class="metric-title">Avg. Engagement Rate</div>
+        <div class="metric-value text-indigo-400">{{ calculatedEngagementRate }}</div>
+        <div class="metric-title">Tỷ Lệ Tương Tác (Engagement)</div>
       </div>
     </div>
 
     <!-- Top Performing Posts Table -->
     <div class="card-social top-posts-card">
-      <h3>Top Performing Threads</h3>
-      <div class="table-responsive">
+      <h3 class="flex items-center gap-2">
+        <i class="fa-solid fa-trophy text-amber-400"></i> Bài Viết Hiệu Suất Cao Nhất (Ranked)
+      </h3>
+      <div class="table-responsive mt-3">
         <table class="analytics-table">
           <thead>
             <tr>
-              <th>Thread Content</th>
-              <th>Created</th>
-              <th>Views</th>
-              <th>Likes</th>
-              <th>Replies</th>
-              <th>Link Clicks</th>
+              <th>Nội dung bài viết</th>
+              <th>Thời gian</th>
+              <th>Lượt xem</th>
+              <th>Lượt thích</th>
+              <th>Phản hồi</th>
+              <th>Click link</th>
+              <th>Điểm ranking</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="post in myPosts" :key="post.id">
-              <td class="content-cell">"{{ post.content }}"</td>
+            <tr v-for="(post, index) in rankedPosts" :key="post.id">
+              <td class="content-cell flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-bold flex items-center justify-center">{{ index + 1 }}</span>
+                <span class="truncate max-w-xs">"{{ post.content }}"</span>
+              </td>
               <td>{{ post.created_at }}</td>
-              <td><strong>{{ post.view_count || 120 }}</strong></td>
-              <td>{{ post.like_count }}</td>
-              <td>{{ post.reply_count }}</td>
+              <td><strong>{{ post.view_count || 0 }}</strong></td>
+              <td>{{ post.like_count || 0 }}</td>
+              <td>{{ post.reply_count || 0 }}</td>
               <td><span class="badge badge-primary">{{ post.link_clicks_count || 0 }}</span></td>
+              <td><span class="text-xs font-extrabold text-indigo-400">{{ post.score.toFixed(0) }} pts</span></td>
             </tr>
           </tbody>
         </table>
@@ -79,12 +86,30 @@
 import { computed } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const { currentUser, posts } = useThreadsStore()
+const store = useThreadsStore()
 
-const myPosts = computed(() => posts.filter(p => p.user_id === currentUser.id))
-const totalViews = computed(() => myPosts.value.reduce((acc, p) => acc + (p.view_count || 0), 0))
-const totalClicks = computed(() => myPosts.value.reduce((acc, p) => acc + (p.link_clicks_count || 0), 0))
-const totalLikes = computed(() => myPosts.value.reduce((acc, p) => acc + (p.like_count || 0), 0))
+const allPosts = computed(() => store.posts || [])
+const totalViews = computed(() => allPosts.value.reduce((acc, p) => acc + (p.view_count || 0), 0))
+const totalClicks = computed(() => allPosts.value.reduce((acc, p) => acc + (p.link_clicks_count || 0), 0))
+const totalLikes = computed(() => allPosts.value.reduce((acc, p) => acc + (p.like_count || 0), 0))
+const totalReplies = computed(() => allPosts.value.reduce((acc, p) => acc + (p.reply_count || 0), 0))
+const totalReposts = computed(() => allPosts.value.reduce((acc, p) => acc + (p.repost_count || 0), 0))
+
+const calculatedEngagementRate = computed(() => {
+  const interactions = totalLikes.value + totalReplies.value + totalReposts.value
+  const views = Math.max(1, totalViews.value)
+  const rate = (interactions / views) * 100
+  return rate.toFixed(1) + '%'
+})
+
+const rankedPosts = computed(() => {
+  return [...allPosts.value]
+    .map(p => {
+      const score = (p.like_count || 0) * 2 + (p.reply_count || 0) * 3 + (p.repost_count || 0) * 4 + (p.view_count || 0) * 0.05
+      return { ...p, score }
+    })
+    .sort((a, b) => b.score - a.score)
+})
 </script>
 
 <style scoped>

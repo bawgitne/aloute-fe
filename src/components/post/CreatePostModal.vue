@@ -1,29 +1,40 @@
 <template>
-  <div v-if="isCreatePostModalOpen" class="modal-overlay" @click.self="closeModal">
+  <div v-if="store.isCreatePostModalOpen" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-pen-to-square text-primary"></i> Create Thread</h3>
+        <h3><i class="fa-solid fa-pen-to-square text-primary"></i> {{ store.quotedPostForCreate ? 'Trích dẫn bài viết' : store.targetCommunityForCreate ? `Đăng vào cộng đồng ${store.targetCommunityForCreate.name}` : 'Tạo bài viết mới' }}</h3>
         <button class="btn-icon btn-sm" @click="closeModal"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="modal-body">
+        <!-- Target Community Badge -->
+        <div v-if="store.targetCommunityForCreate" class="mb-3 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs text-indigo-300 font-semibold">
+          <div class="flex items-center gap-2">
+            <img :src="store.targetCommunityForCreate.avatar" class="w-5 h-5 rounded-full object-cover" />
+            <span>Cộng đồng: {{ store.targetCommunityForCreate.name }}</span>
+          </div>
+          <button @click="store.targetCommunityForCreate = null" class="text-gray-400 hover:text-white">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
         <!-- User Info Header -->
         <div class="composer-user-info">
-          <img :src="currentUser.avatar" class="avatar avatar-md" />
+          <img :src="store.currentUser.avatar" class="avatar avatar-md" />
           <div>
-            <strong>{{ currentUser.display_name }}</strong>
+            <strong>{{ store.currentUser.display_name }}</strong>
             <div class="permission-controls">
               <!-- Visibility Selector -->
               <select v-model="visibility" class="select-sm">
-                <option value="PUBLIC">🌐 Public</option>
-                <option value="FOLLOWERS">👥 Followers only</option>
-                <option value="MENTIONED">💬 Mentioned users</option>
+                <option value="PUBLIC">🌐 Công khai</option>
+                <option value="FOLLOWERS">👥 Người theo dõi</option>
+                <option value="MENTIONED">💬 Nhắc đến</option>
               </select>
               <!-- Reply Permission Selector -->
               <select v-model="allowReply" class="select-sm">
-                <option value="EVERYONE">Can Reply: Everyone</option>
-                <option value="FOLLOWERS">Can Reply: Followers</option>
-                <option value="NONE">Can Reply: Nobody</option>
+                <option value="EVERYONE">Cho phép trả lời: Mọi người</option>
+                <option value="FOLLOWERS">Cho phép trả lời: Theo dõi</option>
+                <option value="NONE">Cho phép trả lời: Không ai</option>
               </select>
             </div>
           </div>
@@ -32,15 +43,47 @@
         <!-- Main Textarea -->
         <textarea
           v-model="content"
-          placeholder="What's on your mind? Use #topics or @mentions..."
+          placeholder="Bạn đang nghĩ gì? Thêm #chủđề hoặc @ngườidùng..."
           rows="4"
           class="composer-textarea"
         ></textarea>
 
+        <!-- Quoted Post Preview Box -->
+        <div v-if="store.quotedPostForCreate" class="relative my-3 p-3 rounded-xl bg-gray-950 border border-indigo-500/40 text-xs">
+          <button @click="store.quotedPostForCreate = null" class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <div class="flex items-center gap-2 mb-1">
+            <img :src="store.quotedPostForCreate.user.avatar" class="w-5 h-5 rounded-full object-cover" />
+            <span class="font-bold text-white">{{ store.quotedPostForCreate.user.display_name }}</span>
+            <span class="text-gray-400">@{{ store.quotedPostForCreate.user.username }}</span>
+          </div>
+          <p class="text-gray-300 line-clamp-2">{{ store.quotedPostForCreate.content }}</p>
+        </div>
+
+        <!-- Media URL Input Box -->
+        <div v-if="showMediaInput" class="p-3 my-2 rounded-xl bg-gray-950 border border-gray-800 space-y-2">
+          <div class="flex gap-2">
+            <select v-model="customMediaType" class="select-sm bg-gray-900 border border-gray-700 text-white">
+              <option value="IMAGE">Ảnh</option>
+              <option value="VIDEO">Video (.mp4/.webm)</option>
+              <option value="GIF">GIF</option>
+            </select>
+            <input
+              type="text"
+              v-model="customMediaUrl"
+              placeholder="Nhập đường dẫn URL media..."
+              class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+            />
+            <button @click="addCustomMedia" class="px-3 py-1 bg-indigo-600 rounded-lg text-xs font-bold text-white">Thêm</button>
+          </div>
+        </div>
+
         <!-- Attached Media Preview -->
         <div v-if="mediaList.length" class="media-preview-container">
           <div v-for="(m, idx) in mediaList" :key="idx" class="media-preview-item">
-            <img :src="m.url" />
+            <video v-if="m.type === 'VIDEO'" :src="m.url" controls class="w-full max-h-36 object-contain"></video>
+            <img v-else :src="m.url" />
             <button class="btn-remove-media" @click="removeMedia(idx)">
               <i class="fa-solid fa-xmark"></i>
             </button>
@@ -50,13 +93,13 @@
         <!-- Poll Builder Form -->
         <div v-if="showPollBuilder" class="poll-builder-card">
           <div class="poll-builder-header">
-            <strong><i class="fa-solid fa-square-poll-vertical text-primary"></i> Create Poll</strong>
+            <strong><i class="fa-solid fa-square-poll-vertical text-primary"></i> Tạo Khảo Sát</strong>
             <button class="btn-icon btn-sm" @click="showPollBuilder = false"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <input
             type="text"
             v-model="pollQuestion"
-            placeholder="Ask a question..."
+            placeholder="Đặt câu hỏi..."
             class="poll-input"
           />
           <div class="poll-builder-options">
@@ -64,7 +107,7 @@
               <input
                 type="text"
                 v-model="pollOptions[idx]"
-                :placeholder="`Option ${idx + 1}`"
+                :placeholder="`Lựa chọn ${idx + 1}`"
                 class="poll-input"
               />
               <button v-if="pollOptions.length > 2" class="btn-icon btn-sm" @click="removePollOption(idx)">
@@ -74,20 +117,20 @@
           </div>
           <div class="poll-builder-footer">
             <button v-if="pollOptions.length < 5" class="btn-outline btn-sm" @click="addPollOption">
-              <i class="fa-solid fa-plus"></i> Add Option
+              <i class="fa-solid fa-plus"></i> Thêm Lựa Chọn
             </button>
             <label class="checkbox-label">
-              <input type="checkbox" v-model="pollAllowMultiple" /> Allow multiple answers
+              <input type="checkbox" v-model="pollAllowMultiple" /> Cho phép chọn nhiều
             </label>
           </div>
         </div>
 
         <!-- Topic Tags Selector -->
         <div class="topic-picker">
-          <span class="picker-label">Topics:</span>
+          <span class="picker-label">Chủ đề:</span>
           <div class="topic-chips">
             <span
-              v-for="topic in topics"
+              v-for="topic in store.topics"
               :key="topic.id"
               class="chip"
               :class="{ selected: selectedTopics.includes(topic.name) }"
@@ -102,10 +145,13 @@
       <!-- Footer Toolbar & Publish Button -->
       <div class="modal-footer">
         <div class="composer-toolbar">
-          <button class="btn-icon" @click="addSampleImage" title="Add Image">
+          <button class="btn-icon" @click="showMediaInput = !showMediaInput" title="Thêm Media URL">
+            <i class="fa-solid fa-photo-film text-indigo-400"></i>
+          </button>
+          <button class="btn-icon" @click="addSampleImage" title="Ảnh mẫu">
             <i class="fa-solid fa-image text-success"></i>
           </button>
-          <button class="btn-icon" @click="showPollBuilder = !showPollBuilder" title="Add Poll">
+          <button class="btn-icon" @click="showPollBuilder = !showPollBuilder" title="Thêm Khảo Sát">
             <i class="fa-solid fa-chart-bar text-primary"></i>
           </button>
         </div>
@@ -114,7 +160,7 @@
           :disabled="!content.trim() && !mediaList.length && !pollQuestion.trim()"
           @click="submitPost"
         >
-          <i class="fa-solid fa-paper-plane"></i> Publish Thread
+          <i class="fa-solid fa-paper-plane"></i> Đăng Bài
         </button>
       </div>
     </div>
@@ -125,18 +171,17 @@
 import { ref } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  currentUser,
-  topics,
-  isCreatePostModalOpen,
-  createPost
-} = useThreadsStore()
+const store = useThreadsStore()
 
 const content = ref('')
 const visibility = ref('PUBLIC')
 const allowReply = ref('EVERYONE')
 const selectedTopics = ref([])
 const mediaList = ref([])
+
+const showMediaInput = ref(false)
+const customMediaUrl = ref('')
+const customMediaType = ref('IMAGE')
 
 // Poll state
 const showPollBuilder = ref(false)
@@ -145,7 +190,9 @@ const pollOptions = ref(['', ''])
 const pollAllowMultiple = ref(false)
 
 function closeModal() {
-  isCreatePostModalOpen.value = false
+  store.isCreatePostModalOpen = false
+  store.quotedPostForCreate = null
+  store.targetCommunityForCreate = null
   resetForm()
 }
 
@@ -155,6 +202,8 @@ function resetForm() {
   allowReply.value = 'EVERYONE'
   selectedTopics.value = []
   mediaList.value = []
+  showMediaInput.value = false
+  customMediaUrl.value = ''
   showPollBuilder.value = false
   pollQuestion.value = ''
   pollOptions.value = ['', '']
@@ -165,6 +214,17 @@ function toggleTopicSelect(name) {
   const idx = selectedTopics.value.indexOf(name)
   if (idx >= 0) selectedTopics.value.splice(idx, 1)
   else selectedTopics.value.push(name)
+}
+
+function addCustomMedia() {
+  if (!customMediaUrl.value.trim()) return
+  mediaList.value.push({
+    id: `med_${Date.now()}`,
+    type: customMediaType.value,
+    url: customMediaUrl.value.trim()
+  })
+  customMediaUrl.value = ''
+  showMediaInput.value = false
 }
 
 function addSampleImage() {
@@ -209,13 +269,16 @@ function submitPost() {
     }
   }
 
-  createPost({
+  store.createPost({
     content: content.value.trim(),
     visibility: visibility.value,
     allowReply: allowReply.value,
     topics: selectedTopics.value,
     media: mediaList.value,
-    poll: pollData
+    poll: pollData,
+    community_id: store.targetCommunityForCreate ? store.targetCommunityForCreate.id : null,
+    quoted_post_id: store.quotedPostForCreate ? store.quotedPostForCreate.id : null,
+    quoted_post: store.quotedPostForCreate ? { ...store.quotedPostForCreate } : null
   })
 
   closeModal()

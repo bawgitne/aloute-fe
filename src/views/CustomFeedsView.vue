@@ -1,44 +1,73 @@
 <template>
-  <div class="custom-feeds-view">
+  <div class="custom-feeds-view space-y-6">
     <div class="card-social page-header">
       <div class="header-content">
         <div>
-          <h2><i class="fa-solid fa-sliders text-primary"></i> Custom Feeds Studio</h2>
-          <p class="text-muted">Create custom timeline streams filtered by specific topic hashtags & usernames.</p>
+          <h2><i class="fa-solid fa-sliders text-primary"></i> Quản Lý Custom Feeds</h2>
+          <p class="text-muted">Tạo và quản lý các luồng bài viết được lọc theo chủ đề và tác giả tùy chỉnh.</p>
         </div>
         <button class="btn-primary" @click="showModal = true">
-          <i class="fa-solid fa-plus"></i> New Custom Feed
+          <i class="fa-solid fa-plus"></i> Tạo Feed Mới
         </button>
       </div>
     </div>
 
-    <!-- Feeds List -->
-    <div class="feeds-grid">
-      <div
-        v-for="feed in customFeeds"
-        :key="feed.id"
-        class="card-social feed-card"
-      >
-        <div class="feed-header">
-          <h3>{{ feed.name }}</h3>
-          <span class="badge badge-primary">Custom</span>
-        </div>
-        <p class="feed-desc">{{ feed.description }}</p>
-
-        <div class="feed-filters-preview">
-          <div v-if="feed.topics && feed.topics.length" class="tags-group">
-            <small>Topics:</small>
-            <span v-for="t in feed.topics" :key="t" class="tag">#{{ t }}</span>
+    <!-- User Custom Feeds List -->
+    <div>
+      <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Feeds Của Bạn</h3>
+      <div class="feeds-grid">
+        <div
+          v-for="feed in store.customFeeds"
+          :key="feed.id"
+          class="card-social feed-card relative group"
+        >
+          <div class="feed-header">
+            <h3>{{ feed.name }}</h3>
+            <div class="flex items-center gap-2">
+              <span class="badge badge-primary">Custom</span>
+              <button @click="store.deleteCustomFeed(feed.id)" class="text-gray-400 hover:text-red-400 p-1" title="Xóa Feed">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
           </div>
-          <div v-if="feed.users && feed.users.length" class="tags-group">
-            <small>Users:</small>
-            <span v-for="u in feed.users" :key="u" class="tag">@{{ u }}</span>
+          <p class="feed-desc">{{ feed.description }}</p>
+
+          <div class="feed-filters-preview">
+            <div v-if="feed.topics && feed.topics.length" class="tags-group">
+              <small>Topics:</small>
+              <span v-for="t in feed.topics" :key="t" class="tag">#{{ t }}</span>
+            </div>
+            <div v-if="feed.users && feed.users.length" class="tags-group">
+              <small>Users:</small>
+              <span v-for="u in feed.users" :key="u" class="tag">@{{ u }}</span>
+            </div>
+          </div>
+
+          <div class="feed-card-footer flex justify-between items-center">
+            <button class="btn-primary btn-sm" @click="applyFeedFilter(feed)">
+              <i class="fa-solid fa-play"></i> Mở Stream Bài Viết
+            </button>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="feed-card-footer">
-          <button class="btn-primary btn-sm" @click="applyFeedFilter(feed)">
-            <i class="fa-solid fa-play"></i> Open Feed Stream
+    <!-- Public Feed Discovery Section -->
+    <div class="pt-4 border-t border-gray-800">
+      <h3 class="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-compass"></i> Khám Phá Feeds Công Khai Đang Nổi
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-for="pFeed in publicDiscoveryFeeds" :key="pFeed.id" class="p-4 rounded-2xl bg-gray-900 border border-gray-800 flex justify-between items-center">
+          <div>
+            <h4 class="font-bold text-sm text-white">{{ pFeed.name }}</h4>
+            <p class="text-xs text-gray-400 mt-0.5">{{ pFeed.description }}</p>
+            <div class="flex gap-1.5 mt-2">
+              <span v-for="t in pFeed.topics" :key="t" class="text-[10px] bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20">#{{ t }}</span>
+            </div>
+          </div>
+          <button @click="savePublicFeed(pFeed)" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-indigo-600 text-xs font-semibold text-white transition flex items-center gap-1 shrink-0">
+            <i class="fa-solid fa-bookmark"></i> Thêm Feed
           </button>
         </div>
       </div>
@@ -54,12 +83,22 @@ import { ref } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 import CustomFeedModal from '@/components/feed/CustomFeedModal.vue'
 
-const { customFeeds, activeFeedFilter, activeTab } = useThreadsStore()
+const store = useThreadsStore()
 const showModal = ref(false)
 
+const publicDiscoveryFeeds = [
+  { id: 'pub_1', name: '🤖 AI & Neural Nets', description: 'Cập nhật nghiên cứu LLM, ChatGPT, Gemini & Agentic Coding mới nhất', topics: ['ArtificialIntelligence', 'WebDev'] },
+  { id: 'pub_2', name: '🎨 Design Systems & UIUX', description: 'Thảo luận Micro-interactions, Tailwind, Glassmorphism & UX Trends', topics: ['UIUXDesign'] },
+  { id: 'pub_3', name: '⚡ Cloudflare & Edge Architecture', description: 'Workers, Durable Objects, D1 & Serverless Cloud Solutions', topics: ['Cloudflare', 'WebDev'] }
+]
+
 function applyFeedFilter(feed) {
-  activeFeedFilter.value = feed.id
-  activeTab.value = 'feed'
+  store.activeFeedFilter = feed.id
+  store.activeTab = 'feed'
+}
+
+function savePublicFeed(pFeed) {
+  store.createCustomFeed(pFeed.name, pFeed.description, pFeed.topics, [])
 }
 </script>
 

@@ -2,7 +2,7 @@
   <article
     ref="cardRef"
     class="card-social post-card"
-    :class="{ 'active-comment-post': selectedPostForComments && selectedPostForComments.id === post.id }"
+    :class="{ 'active-comment-post': store.selectedPostForComments && store.selectedPostForComments.id === post.id }"
     v-if="!isPostHidden"
     @click="selectPostForComments"
   >
@@ -12,7 +12,7 @@
         <img :src="post.user.avatar" class="avatar avatar-md" />
         <div class="author-details">
           <div class="author-title">
-            <span class="author-name">{{ post.user.name }}</span>
+            <span class="author-name">{{ post.user.display_name || post.user.name }}</span>
             <i v-if="post.user.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
             <span class="author-username">@{{ post.user.username }}</span>
           </div>
@@ -37,11 +37,28 @@
         </button>
 
         <div v-if="showMenu" class="post-menu-dropdown card-social">
-          <button class="menu-dropdown-item" @click="triggerHide">
-            <i class="fa-solid fa-eye-slash"></i> Hide Post
+          <!-- Edit Post (Author only) -->
+          <button v-if="isAuthor" class="menu-dropdown-item text-indigo-400" @click="triggerEdit">
+            <i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa bài viết
           </button>
+          <!-- Delete Post (Author only) -->
+          <button v-if="isAuthor" class="menu-dropdown-item text-danger" @click="triggerDelete">
+            <i class="fa-solid fa-trash"></i> Xóa bài viết
+          </button>
+
+          <!-- Hide Post -->
+          <button class="menu-dropdown-item" @click="triggerHide">
+            <i class="fa-solid fa-eye-slash"></i> Ẩn bài viết
+          </button>
+
+          <!-- Restrict User (Non-author) -->
+          <button v-if="!isAuthor" class="menu-dropdown-item text-amber-400" @click="triggerRestrict">
+            <i class="fa-solid fa-user-slash"></i> Hạn chế @{{ post.user.username }}
+          </button>
+
+          <!-- Report Post -->
           <button class="menu-dropdown-item text-danger" @click="triggerReport">
-            <i class="fa-solid fa-flag"></i> Report Post
+            <i class="fa-solid fa-flag"></i> Báo cáo bài viết
           </button>
         </div>
       </div>
@@ -49,24 +66,31 @@
 
     <!-- Post Body Content -->
     <div class="post-body">
-      <p class="post-text">{{ post.content }}</p>
+      <!-- Formatted Post Text with parsed Mentions and Hashtags -->
+      <div class="post-text whitespace-pre-wrap" v-html="formattedContent"></div>
 
       <!-- Topic Tags -->
       <div v-if="post.topics && post.topics.length" class="topic-tags">
         <span
           v-for="t in post.topics"
           :key="t"
-          class="topic-tag"
+          class="topic-tag cursor-pointer hover:underline"
           @click.stop="selectTopic(t)"
         >
           #{{ t }}
         </span>
       </div>
 
-      <!-- Media Attachments -->
+      <!-- Media Attachments (Image, Video, GIF) -->
       <div v-if="post.media && post.media.length" class="post-media-grid">
-        <div v-for="m in post.media" :key="m.id" class="media-item">
-          <img :src="m.url" class="media-img" />
+        <div v-for="m in post.media" :key="m.id || m.url" class="media-item overflow-hidden rounded-xl bg-black border border-gray-800">
+          <video v-if="m.type === 'VIDEO' || isVideoUrl(m.url)" controls :src="m.url" class="w-full max-h-[400px] object-contain" @click.stop></video>
+          <div v-else class="relative group">
+            <img :src="m.url" class="media-img w-full max-h-[450px] object-cover" />
+            <span v-if="m.type === 'GIF' || m.url.endsWith('.gif')" class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/70 text-[10px] font-bold text-white tracking-widest uppercase">
+              GIF
+            </span>
+          </div>
         </div>
       </div>
 
@@ -89,19 +113,20 @@
         <button
           class="btn-action"
           :class="{ active: post.is_liked }"
-          @click="toggleLikePost(post)"
+          @click="store.toggleLikePost(post)"
           title="Like"
         >
           <i :class="post.is_liked ? 'fa-solid fa-heart text-danger' : 'fa-regular fa-heart'"></i>
           <span>{{ post.like_count }}</span>
         </button>
 
-        <!-- Reply / Comments Side Panel Action -->
+        <!-- Reply / Comments Action -->
         <button
           class="btn-action"
-          :class="{ active: selectedPostForComments && selectedPostForComments.id === post.id }"
+          :class="{ active: store.selectedPostForComments && store.selectedPostForComments.id === post.id, 'opacity-50 cursor-not-allowed': !canReply }"
+          :disabled="!canReply"
           @click="selectPostForComments"
-          title="Open Comments Side-Panel"
+          :title="canReply ? 'Mở bình luận' : 'Tác giả tắt bình luận'"
         >
           <i class="fa-regular fa-comment"></i>
           <span>{{ post.reply_count }}</span>
@@ -111,18 +136,20 @@
         <button
           class="btn-action"
           :class="{ active: post.is_reposted }"
-          @click="toggleRepost(post)"
+          @click="store.toggleRepost(post)"
           title="Repost"
         >
           <i :class="post.is_reposted ? 'fa-solid fa-retweet text-success' : 'fa-solid fa-retweet'"></i>
           <span>{{ post.repost_count }}</span>
         </button>
 
-        <!-- Quote Action -->
+        <!-- Quote Action (Real Quote Post) -->
         <button
           class="btn-action"
+          :class="{ 'opacity-50 cursor-not-allowed': !canQuote }"
+          :disabled="!canQuote"
           @click="openQuoteComposer"
-          title="Quote Post"
+          :title="canQuote ? 'Trích dẫn bài viết' : 'Tác giả tắt trích dẫn'"
         >
           <i class="fa-solid fa-quote-left"></i>
           <span>{{ post.quote_count }}</span>
@@ -132,7 +159,7 @@
         <button
           class="btn-action"
           :class="{ active: post.is_bookmarked }"
-          @click="toggleBookmark(post)"
+          @click="store.toggleBookmark(post)"
           title="Bookmark"
         >
           <i :class="post.is_bookmarked ? 'fa-solid fa-bookmark text-primary' : 'fa-regular fa-bookmark'"></i>
@@ -141,9 +168,9 @@
 
       <div class="post-stats-right">
         <!-- Views & Link Clicks Analytics -->
-        <button class="btn-analytics" @click="openAnalytics" title="View Post Analytics">
+        <button class="btn-analytics" @click="openAnalytics" title="Xem phân tích bài viết">
           <i class="fa-solid fa-chart-simple"></i>
-          <span>{{ post.view_count }} views</span>
+          <span>{{ post.view_count }} lượt xem</span>
         </button>
       </div>
     </div>
@@ -160,36 +187,53 @@ const props = defineProps({
   post: { type: Object, required: true }
 })
 
-const {
-  users,
-  moderation,
-  activeTab,
-  activeFeedFilter,
-  selectedProfileUser,
-  selectedPostForComments,
-  selectedPostOffsetTop,
-  commentDisplayMode,
-  isPostDetailModalOpen,
-  isCreatePostModalOpen,
-  isReportModalOpen,
-  reportTargetItem,
-  isAnalyticsModalOpen,
-  analyticsTargetPost,
-  toggleLikePost,
-  toggleRepost,
-  toggleBookmark,
-  hidePost
-} = useThreadsStore()
+const store = useThreadsStore()
 
 const cardRef = ref(null)
 const showMenu = ref(false)
 
-const isPostHidden = computed(() => moderation.hiddenPosts.includes(props.post.id))
+const isAuthor = computed(() => {
+  return props.post.user_id === store.currentUser.id || props.post.user?.username === store.currentUser.username
+})
+
+const isPostHidden = computed(() => store.moderation.hiddenPosts.includes(props.post.id))
+
+const canReply = computed(() => {
+  if (props.post.allow_reply === 'none') return false
+  return true
+})
+
+const canQuote = computed(() => {
+  if (props.post.allow_quote === 'none') return false
+  return true
+})
+
+// Mention and Hashtag parsing
+const formattedContent = computed(() => {
+  if (!props.post.content) return ''
+  let text = props.post.content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Parse @username into styled link
+  text = text.replace(/@([a-zA-Z0-9_]+)/g, '<span class="text-indigo-400 font-semibold cursor-pointer hover:underline">@$1</span>')
+  // Parse #hashtag into styled link
+  text = text.replace(/#([a-zA-Z0-9_]+)/g, '<span class="text-purple-400 font-semibold cursor-pointer hover:underline">#$1</span>')
+
+  return text
+})
+
+function isVideoUrl(url) {
+  if (!url) return false
+  return url.endsWith('.mp4') || url.endsWith('.webm') || url.includes('video')
+}
 
 function selectPostForComments() {
-  selectedPostForComments.value = props.post
-  if (commentDisplayMode.value === 'popup') {
-    isPostDetailModalOpen.value = true
+  if (!canReply.value) return
+  store.selectedPostForComments = props.post
+  if (store.commentDisplayMode === 'popup') {
+    store.isPostDetailModalOpen = true
   } else {
     if (cardRef.value) {
       const parent = cardRef.value.closest('.home-view-layout')
@@ -197,9 +241,9 @@ function selectPostForComments() {
         const cardRect = cardRef.value.getBoundingClientRect()
         const parentRect = parent.getBoundingClientRect()
         const topOffset = cardRect.top - parentRect.top
-        selectedPostOffsetTop.value = Math.max(0, topOffset)
+        store.selectedPostOffsetTop = Math.max(0, topOffset)
       } else {
-        selectedPostOffsetTop.value = cardRef.value.offsetTop || 0
+        store.selectedPostOffsetTop = cardRef.value.offsetTop || 0
       }
     }
   }
@@ -216,36 +260,56 @@ function toggleMenu() {
 }
 
 function openProfile() {
-  const matchUser = users.find(u => u.id === props.post.user_id) || props.post.user
-  selectedProfileUser.value = matchUser
-  activeTab.value = 'profile'
+  const matchUser = store.users.find(u => u.id === props.post.user_id) || props.post.user
+  store.selectedProfileUser = matchUser
+  store.activeTab = 'profile'
 }
 
 function selectTopic(name) {
-  activeFeedFilter.value = `topic_${name}`
-  activeTab.value = 'feed'
+  store.activeFeedFilter = `topic_${name}`
+  store.activeTab = 'feed'
 }
 
 function triggerHide() {
-  hidePost(props.post)
+  store.hidePost(props.post)
   showMenu.value = false
 }
 
 function triggerReport() {
-  reportTargetItem.value = props.post
-  isReportModalOpen.value = true
+  store.reportTargetItem = props.post
+  store.isReportModalOpen = true
+  showMenu.value = false
+}
+
+function triggerEdit() {
+  store.editingPost = props.post
+  store.isEditPostModalOpen = true
+  showMenu.value = false
+}
+
+function triggerDelete() {
+  if (confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) {
+    store.deletePost(props.post.id)
+  }
+  showMenu.value = false
+}
+
+function triggerRestrict() {
+  store.restrictUser(props.post.user)
   showMenu.value = false
 }
 
 function openQuoteComposer() {
-  isCreatePostModalOpen.value = true
+  if (!canQuote.value) return
+  store.openCreatePostWithQuote(props.post)
 }
 
 function openAnalytics() {
-  analyticsTargetPost.value = props.post
-  isAnalyticsModalOpen.value = true
+  store.analyticsTargetPost = props.post
+  store.isAnalyticsModalOpen = true
 }
 </script>
+
 
 <style scoped>
 .post-card {

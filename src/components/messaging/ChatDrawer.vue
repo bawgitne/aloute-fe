@@ -23,9 +23,9 @@
         <div class="drawer-header">
           <!-- Back button if in active chat subview -->
           <button
-            v-if="chatDrawerSubView === 'chat'"
+            v-if="store.chatDrawerSubView === 'chat'"
             class="btn-icon btn-sm"
-            @click="chatDrawerSubView = 'list'"
+            @click="store.chatDrawerSubView = 'list'"
             title="Back to Conversations"
           >
             <i class="fa-solid fa-chevron-left"></i>
@@ -33,54 +33,57 @@
 
           <!-- Header Title -->
           <div class="header-title-box">
-            <template v-if="chatDrawerSubView === 'list'">
-              <span class="header-user-handle">Direct Messages</span>
+            <template v-if="store.chatDrawerSubView === 'list'">
+              <span class="header-user-handle">Tin nhắn (Direct Messages)</span>
             </template>
-            <template v-else-if="selectedConversation">
+            <template v-else-if="store.selectedConversation">
               <div class="active-chat-partner">
                 <img :src="convAvatar" class="avatar avatar-xs" />
                 <div class="partner-meta">
                   <strong class="partner-name">{{ convTitle }}</strong>
-                  <small class="text-success"><i class="fa-solid fa-circle font-6"></i> Active now</small>
+                  <small class="text-success"><i class="fa-solid fa-circle font-6"></i> Đang hoạt động</small>
                 </div>
               </div>
             </template>
           </div>
 
           <!-- Header Actions -->
-          <div class="header-actions">
-            <button class="btn-icon btn-sm" @click="isChatDrawerOpen = false" title="Minimize Panel">
+          <div class="header-actions flex items-center gap-1">
+            <button v-if="store.chatDrawerSubView === 'list'" @click="store.isCreateGroupChatModalOpen = true" class="btn-icon btn-sm text-indigo-400" title="Tạo nhóm chat">
+              <i class="fa-solid fa-users-plus"></i>
+            </button>
+            <button class="btn-icon btn-sm" @click="store.isChatDrawerOpen = false" title="Minimize Panel">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
         </div>
 
         <!-- Subview 1: Conversation List (IG Direct Inbox) -->
-        <div v-if="chatDrawerSubView === 'list'" class="inbox-list-view">
+        <div v-if="store.chatDrawerSubView === 'list'" class="inbox-list-view">
           <!-- Search Bar -->
           <div class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input
               type="text"
               v-model="searchQuery"
-              placeholder="Search messages..."
+              placeholder="Tìm kiếm tin nhắn..."
             />
           </div>
 
           <!-- Active Online Friends Bar -->
           <div class="active-users-strip">
             <div
-              v-for="user in users"
+              v-for="user in store.users"
               :key="user.id"
-              class="active-user-item"
+              class="active-user-item cursor-pointer"
               @click="startChatWithUser(user)"
-              title="Message user"
+              title="Nhắn tin"
             >
               <div class="avatar-relative">
                 <img :src="user.avatar" class="avatar avatar-sm" />
                 <span class="online-dot"></span>
               </div>
-              <span class="user-short-name">{{ user.display_name.split(' ')[0] }}</span>
+              <span class="user-short-name">{{ (user.display_name || user.username).split(' ')[0] }}</span>
             </div>
           </div>
 
@@ -90,7 +93,7 @@
               v-for="conv in filteredConversations"
               :key="conv.id"
               class="conv-thread-item"
-              :class="{ active: selectedConversation && selectedConversation.id === conv.id, unread: conv.unread_count > 0 }"
+              :class="{ active: store.selectedConversation && store.selectedConversation.id === conv.id, unread: conv.unread_count > 0 }"
               @click="openConversation(conv)"
             >
               <div class="avatar-relative">
@@ -117,47 +120,73 @@
         </div>
 
         <!-- Subview 2: Active Chat Thread View -->
-        <div v-else-if="chatDrawerSubView === 'chat' && selectedConversation" class="chat-thread-view">
+        <div v-else-if="store.chatDrawerSubView === 'chat' && store.selectedConversation" class="chat-thread-view">
           <!-- Messages Stream Body -->
           <div class="window-messages-body" ref="messagesContainer">
             <div
-              v-for="msg in selectedConversation.messages"
+              v-for="msg in store.selectedConversation.messages"
               :key="msg.id"
               class="mini-bubble-row"
-              :class="{ mine: msg.sender_id === currentUser.id }"
+              :class="{ mine: msg.sender_id === store.currentUser.id }"
             >
-              <div class="mini-bubble">
+              <div class="mini-bubble group relative">
+                <!-- Reply-to context if any -->
+                <div v-if="msg.reply_to" class="mb-1 p-1.5 rounded bg-black/30 border-l-2 border-indigo-500 text-[10px] text-gray-300">
+                  <span class="font-bold text-indigo-400">Trả lời:</span> {{ msg.reply_to.content }}
+                </div>
+
                 <p>{{ msg.content }}</p>
-                <div class="bubble-meta">
+
+                <!-- Media preview if any -->
+                <div v-if="msg.media_url" class="mt-1 rounded-lg overflow-hidden max-h-32 bg-black">
+                  <img :src="msg.media_url" class="max-h-32 object-contain" />
+                </div>
+
+                <div class="bubble-meta flex items-center justify-between gap-2">
                   <small>{{ msg.created_at }}</small>
                   <div v-if="msg.reactions && msg.reactions.length" class="reactions-badge">
                     <span v-for="(r, i) in msg.reactions" :key="i">{{ r }}</span>
                   </div>
                 </div>
 
-                <!-- Hover Emoji Reaction Menu -->
+                <!-- Hover Actions: Reply & Emoji Reactions -->
                 <div class="reaction-picker-menu">
-                  <button @click="addMessageReaction(msg, '❤️')">❤️</button>
-                  <button @click="addMessageReaction(msg, '👍')">👍</button>
-                  <button @click="addMessageReaction(msg, '🔥')">🔥</button>
-                  <button @click="addMessageReaction(msg, '🚀')">🚀</button>
+                  <button @click="replyingToMessage = msg" title="Trả lời tin nhắn">↩️</button>
+                  <button @click="store.addMessageReaction(msg, '❤️')">❤️</button>
+                  <button @click="store.addMessageReaction(msg, '👍')">👍</button>
+                  <button @click="store.addMessageReaction(msg, '🔥')">🔥</button>
                 </div>
               </div>
             </div>
           </div>
 
+          <!-- Replying To Banner -->
+          <div v-if="replyingToMessage" class="px-3 py-1.5 bg-gray-950 border-t border-indigo-500/40 flex justify-between items-center text-xs text-indigo-300">
+            <span class="truncate">Đang trả lời: {{ replyingToMessage.content }}</span>
+            <button @click="replyingToMessage = null" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <!-- Attachment URL Box -->
+          <div v-if="showAttachmentInput" class="px-3 py-2 bg-gray-950 border-t border-gray-800 flex gap-2">
+            <input type="text" v-model="attachmentUrl" placeholder="Dán URL ảnh/file đính kèm..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white" />
+            <button @click="showAttachmentInput = false" class="px-2 py-1 bg-indigo-600 rounded text-xs text-white">Xong</button>
+          </div>
+
           <!-- Chat Input Footer -->
-          <div class="window-footer">
-            <div class="input-relative">
+          <div class="window-footer flex items-center gap-1">
+            <button @click="showAttachmentInput = !showAttachmentInput" class="p-2 text-gray-400 hover:text-indigo-400" title="Đính kèm media">
+              <i class="fa-solid fa-paperclip"></i>
+            </button>
+            <div class="input-relative flex-1">
               <input
                 type="text"
                 v-model="inputMsg"
-                placeholder="Aa..."
+                placeholder="Nhập tin nhắn..."
                 @keyup.enter="handleSend"
               />
               <button
                 class="embed-send-btn"
-                :disabled="!inputMsg.trim()"
+                :disabled="!inputMsg.trim() && !attachmentUrl.trim()"
                 @click="handleSend"
                 title="Send Message"
               >
@@ -175,34 +204,26 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  currentUser,
-  users,
-  conversations,
-  selectedConversation,
-  isChatDrawerOpen,
-  chatDrawerSubView,
-  totalUnreadCount,
-  sendMessage,
-  addMessageReaction,
-  openMiniChat
-} = useThreadsStore()
+const store = useThreadsStore()
 
 const searchQuery = ref('')
 const inputMsg = ref('')
+const attachmentUrl = ref('')
+const showAttachmentInput = ref(false)
+const replyingToMessage = ref(null)
 const messagesContainer = ref(null)
 
 function toggleChatDrawer() {
-  isChatDrawerOpen.value = !isChatDrawerOpen.value
-  if (isChatDrawerOpen.value) {
-    chatDrawerSubView.value = 'list'
+  store.isChatDrawerOpen = !store.isChatDrawerOpen
+  if (store.isChatDrawerOpen) {
+    store.chatDrawerSubView = 'list'
   }
 }
 
 const filteredConversations = computed(() => {
-  if (!searchQuery.value.trim()) return conversations
+  if (!searchQuery.value.trim()) return store.conversations
   const q = searchQuery.value.toLowerCase()
-  return conversations.filter(c => {
+  return store.conversations.filter(c => {
     const title = getConvTitle(c).toLowerCase()
     const lastMsg = c.last_message ? c.last_message.toLowerCase() : ''
     return title.includes(q) || lastMsg.includes(q)
@@ -210,18 +231,18 @@ const filteredConversations = computed(() => {
 })
 
 const convTitle = computed(() => {
-  if (!selectedConversation.value) return 'Chat'
-  return getConvTitle(selectedConversation.value)
+  if (!store.selectedConversation) return 'Chat'
+  return getConvTitle(store.selectedConversation)
 })
 
 const convAvatar = computed(() => {
-  if (!selectedConversation.value) return ''
-  return getConvAvatar(selectedConversation.value)
+  if (!store.selectedConversation) return ''
+  return getConvAvatar(store.selectedConversation)
 })
 
 function getConvTitle(conv) {
   if (conv.type === 'DIRECT' && conv.participant) {
-    return conv.participant.name
+    return conv.participant.display_name || conv.participant.name
   }
   return conv.group_name || 'Conversation'
 }
@@ -230,7 +251,7 @@ function getConvAvatar(conv) {
   if (conv.type === 'DIRECT' && conv.participant) {
     return conv.participant.avatar
   }
-  return conv.group_avatar || currentUser.avatar
+  return conv.group_avatar || store.currentUser.avatar
 }
 
 function isConvOnline(conv) {
@@ -238,40 +259,23 @@ function isConvOnline(conv) {
 }
 
 function openConversation(conv) {
-  selectedConversation.value = conv
-  conv.unread_count = 0 // Clear unread when opened
-  openMiniChat(conv)
+  store.openConversation(conv.id)
 }
 
 function startChatWithUser(targetUser) {
-  let existing = conversations.find(
-    c => c.type === 'DIRECT' && c.participant && c.participant.id === targetUser.id
-  )
-  if (!existing) {
-    existing = {
-      id: `conv_${Date.now()}`,
-      type: 'DIRECT',
-      participant: {
-        id: targetUser.id,
-        name: targetUser.display_name,
-        username: targetUser.username,
-        avatar: targetUser.avatar,
-        online: true
-      },
-      unread_count: 0,
-      last_message: 'Started a new conversation',
-      last_time: 'Just now',
-      messages: []
-    }
-    conversations.unshift(existing)
-  }
-  openConversation(existing)
+  store.openMiniChat(targetUser)
 }
 
 function handleSend() {
-  if (!inputMsg.value.trim() || !selectedConversation.value) return
-  sendMessage(selectedConversation.value.id, inputMsg.value.trim())
+  if ((!inputMsg.value.trim() && !attachmentUrl.value.trim()) || !store.selectedConversation) return
+  store.sendMessage(store.selectedConversation.id, inputMsg.value.trim(), {
+    reply_to: replyingToMessage.value ? { id: replyingToMessage.value.id, content: replyingToMessage.value.content } : null,
+    media_url: attachmentUrl.value.trim() || null
+  })
   inputMsg.value = ''
+  attachmentUrl.value = ''
+  showAttachmentInput.value = false
+  replyingToMessage.value = null
   nextTick(() => {
     scrollToBottom()
   })
@@ -282,6 +286,10 @@ function scrollToBottom() {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
 }
+
+watch(() => store.selectedConversation?.messages.length, () => {
+  nextTick(() => scrollToBottom())
+})
 </script>
 
 <style scoped>

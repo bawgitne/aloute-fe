@@ -18,6 +18,12 @@
 
     <!-- Global Floating Modals & Drawers -->
     <CreatePostModal />
+    <EditPostModal />
+    <AuthModal />
+    <CreateStoryModal />
+    <StoryViewerModal />
+    <CreateCommunityModal />
+    <CreateGroupChatModal />
     <ReportModal />
     <AnalyticsModal />
     <PostDetailModal />
@@ -42,6 +48,12 @@ import ModerationView from '@/views/ModerationView.vue'
 import AnalyticsView from '@/views/AnalyticsView.vue'
 import FriendsView from '@/views/FriendsView.vue'
 import CreatePostModal from '@/components/post/CreatePostModal.vue'
+import EditPostModal from '@/components/post/EditPostModal.vue'
+import AuthModal from '@/components/auth/AuthModal.vue'
+import CreateStoryModal from '@/components/story/CreateStoryModal.vue'
+import StoryViewerModal from '@/components/story/StoryViewerModal.vue'
+import CreateCommunityModal from '@/components/community/CreateCommunityModal.vue'
+import CreateGroupChatModal from '@/components/messaging/CreateGroupChatModal.vue'
 import ReportModal from '@/components/post/ReportModal.vue'
 import AnalyticsModal from '@/components/post/AnalyticsModal.vue'
 import PostDetailModal from '@/components/post/PostDetailModal.vue'

@@ -406,8 +406,37 @@ const moderation = reactive({
   hiddenPosts: []
 })
 
+// Stories System
+const stories = reactive([
+  {
+    id: 'story_group_1',
+    user: currentUser,
+    items: [
+      { id: 'st_1', type: 'IMAGE', mediaUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80', caption: 'Building the new SocialV architecture! 🚀', created_at: '2 hours ago' }
+    ]
+  },
+  {
+    id: 'story_group_2',
+    user: users[0], // Sarah Chen
+    items: [
+      { id: 'st_2', type: 'TEXT', caption: 'Just launched our Vue 3 design system update!', bg: 'linear-gradient(135deg, #6f42c1, #00d084)', created_at: '4 hours ago' }
+    ]
+  },
+  {
+    id: 'story_group_3',
+    user: users[1], // Marcus Vance
+    items: [
+      { id: 'st_3', type: 'IMAGE', mediaUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80', caption: 'Testing autonomous agent execution limits 🤖', created_at: '5 hours ago' }
+    ]
+  }
+])
+
 // Settings
 const showMiniProfileCard = ref(true)
+
+// Auth State
+const isLoggedIn = ref(true)
+const isAuthModalOpen = ref(false)
 
 // Active State Navigation & UI Filters
 const activeTab = ref('feed')
@@ -423,10 +452,82 @@ const isChatDrawerOpen = ref(false)
 const chatDrawerSubView = ref('chat') // 'list' | 'chat'
 const activeMiniChats = ref([]) // [ { id: 'conv_1', conv, isMinimized: false } ]
 const isCreatePostModalOpen = ref(false)
-const isReportModalOpen = ref(false)
+const quotedPostForCreate = ref(null)
+const targetCommunityForCreate = ref(null)
 
-function openMiniChat(conv) {
+const isReportModalOpen = ref(false)
+const reportTargetItem = ref(null)
+const isAnalyticsModalOpen = ref(false)
+const analyticsTargetPost = ref(null)
+const darkTheme = ref(false)
+
+// Modals State for new features
+const isCreateCommunityModalOpen = ref(false)
+const isCreateGroupChatModalOpen = ref(false)
+const isCreateStoryModalOpen = ref(false)
+const isStoryViewerOpen = ref(false)
+const activeStoryGroup = ref(null)
+
+const isEditPostModalOpen = ref(false)
+const editingPost = ref(null)
+
+const totalUnreadCount = computed(() => {
+  return conversations.reduce((acc, conv) => acc + (conv.unread_count || 0), 0)
+})
+
+// Methods
+function pushNotification(type, actor, message, postId = null) {
+  const newNotif = {
+    id: `notif_${Date.now()}`,
+    actor: {
+      name: actor.display_name || actor.name,
+      username: actor.username,
+      avatar: actor.avatar
+    },
+    type,
+    message,
+    post_id: postId,
+    created_at: 'Just now',
+    is_read: false
+  }
+  notifications.unshift(newNotif)
+}
+
+function openConversation(conv) {
   if (!conv) return
+  conv.unread_count = 0
+  selectedConversation.value = conv
+  chatDrawerSubView.value = 'chat'
+}
+
+function openMiniChat(target) {
+  if (!target) return
+  
+  let conv = target
+  // If target is a User object instead of a Conversation object
+  if (target.username && !target.messages) {
+    let existingConv = conversations.find(c => c.type === 'DIRECT' && c.participant && c.participant.id === target.id)
+    if (!existingConv) {
+      existingConv = {
+        id: `conv_${Date.now()}`,
+        type: 'DIRECT',
+        participant: {
+          id: target.id,
+          name: target.display_name,
+          username: target.username,
+          avatar: target.avatar,
+          online: true
+        },
+        unread_count: 0,
+        last_message: 'Started a new conversation',
+        last_time: 'Just now',
+        messages: []
+      }
+      conversations.unshift(existingConv)
+    }
+    conv = existingConv
+  }
+
   conv.unread_count = 0
   selectedConversation.value = conv
   
@@ -459,16 +560,19 @@ function toggleMinimizeMiniChat(convId) {
     item.isMinimized = !item.isMinimized
   }
 }
-const reportTargetItem = ref(null)
-const isAnalyticsModalOpen = ref(false)
-const analyticsTargetPost = ref(null)
-const darkTheme = ref(false)
 
-const totalUnreadCount = computed(() => {
-  return conversations.reduce((acc, conv) => acc + (conv.unread_count || 0), 0)
-})
+function openCreatePostWithQuote(post) {
+  quotedPostForCreate.value = post
+  targetCommunityForCreate.value = null
+  isCreatePostModalOpen.value = true
+}
 
-// Methods
+function openCreatePostForCommunity(comm) {
+  targetCommunityForCreate.value = comm
+  quotedPostForCreate.value = null
+  isCreatePostModalOpen.value = true
+}
+
 function toggleDarkTheme() {
   darkTheme.value = !darkTheme.value
   if (darkTheme.value) {
@@ -491,13 +595,13 @@ function createPost(newPostData) {
     },
     content: newPostData.content,
     parent_post_id: null,
-    quoted_post_id: newPostData.quotedPostId || null,
-    quoted_post: newPostData.quotedPost || null,
+    quoted_post_id: newPostData.quotedPostId || (quotedPostForCreate.value ? quotedPostForCreate.value.id : null),
+    quoted_post: newPostData.quotedPost || quotedPostForCreate.value || null,
     visibility: newPostData.visibility || 'PUBLIC',
     allow_reply: newPostData.allowReply || 'EVERYONE',
     allow_quote: newPostData.allowQuote || 'EVERYONE',
-    community_id: newPostData.communityId || null,
-    flair: newPostData.flair || null,
+    community_id: newPostData.communityId || (targetCommunityForCreate.value ? targetCommunityForCreate.value.id : null),
+    flair: newPostData.flair || (targetCommunityForCreate.value && targetCommunityForCreate.value.flairs ? targetCommunityForCreate.value.flairs[0] : null),
     topics: newPostData.topics || [],
     media: newPostData.media || [],
     poll: newPostData.poll || null,
@@ -513,10 +617,47 @@ function createPost(newPostData) {
     created_at: 'Just now',
     replies: []
   }
+
+  if (newPost.quoted_post_id) {
+    const originalPost = posts.find(p => p.id === newPost.quoted_post_id)
+    if (originalPost) originalPost.quote_count++
+  }
+  if (newPost.community_id) {
+    const comm = communities.find(c => c.id === newPost.community_id)
+    if (comm) comm.post_count++
+  }
+
   posts.unshift(newPost)
   currentUser.posts_count++
   selectedPostForComments.value = newPost
   selectedPostOffsetTop.value = 0
+  
+  // Reset targets
+  quotedPostForCreate.value = null
+  targetCommunityForCreate.value = null
+}
+
+function openEditPostModal(post) {
+  editingPost.value = post
+  isEditPostModalOpen.value = true
+}
+
+function editPost(postId, newContent) {
+  const target = posts.find(p => p.id === postId)
+  if (target) {
+    target.content = newContent
+    target.created_at = 'Edited just now'
+  }
+  isEditPostModalOpen.value = false
+  editingPost.value = null
+}
+
+function deletePost(postId) {
+  const index = posts.findIndex(p => p.id === postId)
+  if (index !== -1) {
+    posts.splice(index, 1)
+    if (currentUser.posts_count > 0) currentUser.posts_count--
+  }
 }
 
 function addReply(postId, replyContent) {
@@ -540,6 +681,10 @@ function addReply(postId, replyContent) {
     }
     targetPost.replies.push(newReply)
     targetPost.reply_count++
+
+    if (targetPost.user_id !== currentUser.id) {
+      pushNotification('REPLY', currentUser, `replied: "${replyContent.slice(0, 35)}..."`, postId)
+    }
   }
 }
 
@@ -547,6 +692,9 @@ function toggleLikePost(post) {
   post.is_liked = !post.is_liked
   if (post.is_liked) {
     post.like_count++
+    if (post.user_id !== currentUser.id) {
+      pushNotification('LIKE', currentUser, `liked your thread "${post.content.slice(0, 30)}..."`, post.id)
+    }
   } else {
     post.like_count--
   }
@@ -556,6 +704,9 @@ function toggleRepost(post) {
   post.is_reposted = !post.is_reposted
   if (post.is_reposted) {
     post.repost_count++
+    if (post.user_id !== currentUser.id) {
+      pushNotification('QUOTE', currentUser, `reposted your thread "${post.content.slice(0, 30)}..."`, post.id)
+    }
   } else {
     post.repost_count--
   }
@@ -587,6 +738,7 @@ function followUser(targetUser) {
   targetUser.is_following = true
   targetUser.followers_count++
   currentUser.following_count++
+  pushNotification('FOLLOW', currentUser, 'started following you')
 }
 
 function unfollowUser(targetUser) {
@@ -597,16 +749,34 @@ function unfollowUser(targetUser) {
 
 function blockUser(targetUser) {
   targetUser.is_blocked = true
-  moderation.blockedUsers.push(targetUser)
+  if (!moderation.blockedUsers.some(u => u.id === targetUser.id)) {
+    moderation.blockedUsers.push(targetUser)
+  }
 }
 
 function muteUser(targetUser) {
   targetUser.is_muted = true
-  moderation.mutedUsers.push(targetUser)
+  if (!moderation.mutedUsers.some(u => u.id === targetUser.id)) {
+    moderation.mutedUsers.push(targetUser)
+  }
+}
+
+function restrictUser(targetUser) {
+  targetUser.is_restricted = true
+  if (!moderation.restrictedUsers.some(u => u.id === targetUser.id)) {
+    moderation.restrictedUsers.push(targetUser)
+  }
+}
+
+function unrestrictUser(targetUser) {
+  targetUser.is_restricted = false
+  moderation.restrictedUsers = moderation.restrictedUsers.filter(u => u.id !== targetUser.id)
 }
 
 function hidePost(post) {
-  moderation.hiddenPosts.push(post.id)
+  if (!moderation.hiddenPosts.includes(post.id)) {
+    moderation.hiddenPosts.push(post.id)
+  }
 }
 
 function submitReport(reason, description) {
@@ -614,7 +784,7 @@ function submitReport(reason, description) {
   moderation.reports.unshift({
     id: `rep_${Date.now()}`,
     reporter: currentUser.display_name,
-    target: reportTargetItem.value.name || reportTargetItem.value.content || 'Item',
+    target: reportTargetItem.value.name || reportTargetItem.value.username || reportTargetItem.value.content || 'Reported Item',
     reason,
     description,
     status: 'PENDING',
@@ -634,19 +804,99 @@ function leaveCommunity(comm) {
   comm.member_count--
 }
 
-function sendMessage(convId, content) {
+function createCommunity(commData) {
+  const newComm = {
+    id: `comm_${Date.now()}`,
+    name: commData.name,
+    slug: commData.slug || commData.name.toLowerCase().replace(/\s+/g, '-'),
+    description: commData.description,
+    avatar: commData.avatar || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150&auto=format&fit=crop&q=80',
+    cover: commData.cover || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1000&auto=format&fit=crop&q=80',
+    is_private: commData.is_private || false,
+    member_count: 1,
+    post_count: 0,
+    is_joined: true,
+    flairs: [
+      { id: `flair_${Date.now()}_1`, title: 'General', color: '#50b5ff' },
+      { id: `flair_${Date.now()}_2`, title: 'Announcement', color: '#e0245e' }
+    ]
+  }
+  communities.unshift(newComm)
+  selectedCommunity.value = newComm
+  isCreateCommunityModalOpen.value = false
+}
+
+function createGroupChat(groupName, memberUsers) {
+  const newGroup = {
+    id: `conv_${Date.now()}`,
+    type: 'GROUP',
+    group_name: groupName,
+    group_avatar: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150&auto=format&fit=crop&q=80',
+    unread_count: 0,
+    last_message: 'Group conversation created',
+    last_time: 'Just now',
+    messages: []
+  }
+  conversations.unshift(newGroup)
+  openMiniChat(newGroup)
+  isCreateGroupChatModalOpen.value = false
+}
+
+function createStory(storyData) {
+  let userGroup = stories.find(s => s.user.id === currentUser.id)
+  if (!userGroup) {
+    userGroup = { id: `story_group_${Date.now()}`, user: currentUser, items: [] }
+    stories.unshift(userGroup)
+  }
+  userGroup.items.unshift({
+    id: `st_${Date.now()}`,
+    type: storyData.type || 'TEXT',
+    mediaUrl: storyData.mediaUrl || null,
+    caption: storyData.caption || '',
+    bg: storyData.bg || 'linear-gradient(135deg, #50b5ff, #00d084)',
+    created_at: 'Just now'
+  })
+  isCreateStoryModalOpen.value = false
+}
+
+function openStoryViewer(storyGroup) {
+  activeStoryGroup.value = storyGroup
+  isStoryViewerOpen.value = true
+}
+
+function deleteCustomFeed(feedId) {
+  const index = customFeeds.findIndex(f => f.id === feedId)
+  if (index !== -1) customFeeds.splice(index, 1)
+}
+
+function editCustomFeed(feedId, name, description) {
+  const feed = customFeeds.find(f => f.id === feedId)
+  if (feed) {
+    feed.name = name
+    feed.description = description
+  }
+}
+
+function sendMessage(convId, content, replyToMsg = null, mediaObj = null) {
   const conv = conversations.find(c => c.id === convId)
   if (!conv) return
   const newMsg = {
     id: `msg_${Date.now()}`,
     sender_id: currentUser.id,
     content,
+    reply_to: replyToMsg ? { id: replyToMsg.id, content: replyToMsg.content } : null,
+    media: mediaObj || null,
     created_at: 'Just now',
     reactions: []
   }
   conv.messages.push(newMsg)
-  conv.last_message = `You: ${content}`
+  conv.last_message = `You: ${content || 'Sent an attachment'}`
   conv.last_time = 'Just now'
+
+  // Push notification if sending to someone else
+  if (conv.type === 'DIRECT' && conv.participant && conv.participant.id !== currentUser.id) {
+    pushNotification('MESSAGE', currentUser, `sent you a message: "${content.slice(0, 30)}..."`)
+  }
 }
 
 function addMessageReaction(msg, emoji) {
@@ -688,7 +938,10 @@ export function useThreadsStore() {
     conversations,
     notifications,
     moderation,
+    stories,
     showMiniProfileCard,
+    isLoggedIn,
+    isAuthModalOpen,
     activeTab,
     activeFeedFilter,
     selectedCommunity,
@@ -701,14 +954,28 @@ export function useThreadsStore() {
     isChatDrawerOpen,
     chatDrawerSubView,
     isCreatePostModalOpen,
+    quotedPostForCreate,
+    targetCommunityForCreate,
     isReportModalOpen,
     reportTargetItem,
     isAnalyticsModalOpen,
     analyticsTargetPost,
+    isCreateCommunityModalOpen,
+    isCreateGroupChatModalOpen,
+    isCreateStoryModalOpen,
+    isStoryViewerOpen,
+    activeStoryGroup,
+    isEditPostModalOpen,
+    editingPost,
     darkTheme,
     totalUnreadCount,
     toggleDarkTheme,
     createPost,
+    openCreatePostWithQuote,
+    openCreatePostForCommunity,
+    openEditPostModal,
+    editPost,
+    deletePost,
     addReply,
     toggleLikePost,
     toggleRepost,
@@ -718,18 +985,28 @@ export function useThreadsStore() {
     unfollowUser,
     blockUser,
     muteUser,
+    restrictUser,
+    unrestrictUser,
     hidePost,
     submitReport,
     joinCommunity,
     leaveCommunity,
+    createCommunity,
+    createGroupChat,
+    createStory,
+    openStoryViewer,
+    deleteCustomFeed,
+    editCustomFeed,
     sendMessage,
     addMessageReaction,
     createCustomFeed,
+    openConversation,
     openMiniChat,
     activeMiniChats,
     closeMiniChat,
     toggleMinimizeMiniChat,
     markAllNotificationsRead,
-    markNotificationRead
+    markNotificationRead,
+    pushNotification
   }
 }
