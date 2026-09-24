@@ -58,10 +58,10 @@
           <i :class="getNotifIcon(notif.type)"></i>
         </div>
 
-        <img :src="notif.actor.avatar" class="avatar avatar-md" />
+        <img v-if="notif.actor" :src="notif.actor.avatar" class="avatar avatar-md" />
 
         <div class="notif-body-col">
-          <p><strong>{{ notif.actor.name }}</strong> @{{ notif.actor.username }} {{ notif.message }}</p>
+          <p><strong v-if="notif.actor">{{ notif.actor.name }} @{{ notif.actor.username }}</strong> {{ notif.message }}</p>
           <small class="text-muted">{{ notif.created_at }}</small>
         </div>
 
