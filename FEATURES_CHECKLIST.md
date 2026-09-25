@@ -1,6 +1,7 @@
 # THREADS CLONE — DANH SÁCH TÍNH NĂNG & TIẾN ĐỘ THỰC HIỆN (CHECKLIST)
 
 > Tài liệu này được tổng hợp từ kiến trúc hệ thống **`thread_system.md`** và đối chiếu trực tiếp với mã nguồn ứng dụng Threads Clone (Frontend Vue 3 + Composables State Store).
+> **Cập nhật gần nhất**: 2026-09-25
 
 ---
 
@@ -68,23 +69,29 @@
 - [x] **3.5. Yêu thích (Like / Unlike)**
   - [x] Nút Like dạng trái tim với hiệu ứng animation.
   - [x] Cập nhật ngay lập tức `like_count`.
-- [x] **3.6. Lưu bài viết (Bookmark)**
-  - [x] Lưu bài viết vào danh sách bài viết đã đánh dấu cá nhân.
+- [x] **3.6. Lưu bài viết (Bookmark / Saved Posts)**
+  - [x] Đánh dấu bài viết và phản hồi trạng thái biểu tượng màu hổ phách (amber).
+  - [x] Đồng bộ trạng thái bookmark tức thì giữa `PostCard`, Header Settings, SidebarLeft và Profile tab.
+  - [x] Trang xem riêng bài viết đã lưu (`SavedPostsView.vue` với route `/saved` và `/bookmarks`).
 - [x] **3.7. Nhắc tên người dùng (Mention)**
   - [x] Nhắc tên `@username` trong nội dung bài viết và tạo liên kết tới trang cá nhân.
 
 ---
 
-## 4. 🖼️ Post Media Domain (Đa phương tiện)
+## 4. 🖼️ Post Media & Story Domain (Đa phương tiện & Story)
 
 - [x] **4.1. Định dạng Media**
   - [x] Hỗ trợ hiển thị Hình ảnh (Grid layout), Video, GIF.
 - [x] **4.2. Xem ảnh chi tiết**
   - [x] Modal xem bài viết & media sắc nét (`PostDetailModal.vue`).
+- [x] **4.3. Khoảnh khắc / Story Viewer (`StoryViewerModal.vue`)**
+  - [x] Phân nhóm story theo từng tác giả (User Story Groups).
+  - [x] Hỗ trợ xem Hình ảnh, Video, Văn bản (Text stories with custom gradient background).
+  - [x] Tự động chuyển tiếp câu chuyện / tác giả tiếp theo, cho phép trả lời trực tiếp qua Mini Chat Dock.
 
 ---
 
-## 5. 🏷️ Topic Domain (Chủ đề Hashtag)
+## 5. 🏷️ Topic Domain (Chủ đề Hashtag & Topic Routes)
 
 - [x] **5.1. Thẻ Topic / Hashtag**
   - [x] Gắn hashtag vào bài viết (`#VueJS`, `#WebDev`, `#ArtificialIntelligence`, v.v.).
@@ -92,6 +99,10 @@
   - [x] Bấm vào Hashtag để lọc danh sách bài viết thuộc chủ đề đó trên Feed.
 - [x] **5.3. Danh sách Trending Hashtags**
   - [x] Hiển thị trên Left Sidebar và gợi ý trong thanh tìm kiếm Header.
+- [x] **5.4. Trang chi tiết Topic riêng biệt (`TopicDetailView.vue`)**
+  - [x] Route động `/topic/:name` hiển thị `#topic` chữ lớn nổi trên background header.
+  - [x] Huy hiệu trạng thái xu hướng (Trending / Popular badge), số lượng Posts, Lượt tương tác, Lượt xem.
+  - [x] Bảng tin lọc bài viết chuẩn theo hashtag topic với các tab All, Top, Recent.
 
 ---
 
@@ -108,7 +119,8 @@
 ## 7. 👥 Community Domain (Cộng đồng)
 
 - [x] **7.1. Trang danh sách Cộng đồng (`CommunitiesView.vue`)**
-  - [x] Khám phá tất cả các cộng đồng (All Communities) & Cộng đồng đã tham gia (My Joined Communities).
+  - [x] Layout 2 cột tối ưu: Cột chính cuộn Bảng tin (Feed) các bài viết từ cộng đồng đã tham gia; Cột phải chứa "Cộng đồng đã tham gia" & "Đề xuất cộng đồng".
+  - [x] Đã bỏ banner header tiêu đề thừa theo thiết kế tối giản.
 - [x] **7.2. Tham gia / Rời cộng đồng (Join / Leave)**
   - [x] Nút Join/Joined cập nhật ngay lập tức `member_count`.
 - [x] **7.3. Trang chi tiết Cộng đồng (`CommunityDetail.vue`)**
@@ -137,7 +149,7 @@
 ## 9. 💬 Messaging Domain (Nhắn tin Trực tiếp & Nhóm)
 
 - [x] **9.1. Khung Chat tổng ở góc dưới (`ChatDrawer.vue`)**
-  - [x] Nằm sát đáy màn hình (`bottom: 0; right: 20px`).
+  - [x] Nằm sát đáy màn hình (`bottom: 0; right: 20px`), hiển thị toàn cục bất kể tab hiện tại.
   - [x] Danh sách cuộc hội thoại Direct & Group, hiển thị tin nhắn mới nhất và badge tin chưa đọc.
 - [x] **9.2. Cửa sổ Mini Chat tách rời (`MultiMiniChatDock.vue`)**
   - [x] Bật cùng lúc nhiều cửa sổ chat dạng Facebook Messenger Desktop ở góc dưới bên phải.
@@ -189,13 +201,15 @@
 - [x] **13.1. Chế độ hiển thị Cột trái Frameless (`Left Split Mode`)**
   - [x] Cột Left Sidebar phẳng (Frameless, không background card, không border/shadow), căn giữa theo chiều dọc màn hình (`top: 50vh; transform: translateY(-50%)`).
   - [x] Đã xóa tiêu đề thừa, tối ưu khoảng cách sát lề trái (`gap: 16px; padding-left: 12px`).
-- [x] **13.2. Cấu trúc Topbar Header tối giản**
-  - [x] **Thanh điều hướng trung tâm**: `Feed` | `Communities` | `Safety`.
+- [x] **13.2. Cấu trúc Topbar Header hiện đại**
+  - [x] **Logo Threads**: Điều hướng nhanh về trang chủ `/`.
+  - [x] **Thanh điều hướng trung tâm**: `Bảng tin (Feed)` | `Cộng đồng (Communities)` | `Đang theo dõi (Following)`.
+  - [x] **Thanh tìm kiếm**: Mở rộng 320px với bo góc 12px mềm mại.
   - [x] **Góc phải Topbar**: Nút `Friends` | Nút `Notifications` (chuông) | Nút `Settings` (bánh răng) | Avatar người dùng.
 - [x] **13.3. Menu Cài đặt Popover (`Settings Dropdown`)**
   - [x] Tích hợp công tắc gạt Chế độ Tối/Sáng (**Dark Theme Mode**).
-  - [x] Công tắc Bật/Tắt Card Mini Profile trên Sidebar.
-  - [x] Chuyển đổi linh hoạt 3 chế độ hiển thị Bình luận (**Left Split** / **Side Panel** / **Pop-up**).
+  - [x] Lựa chọn 3 chế độ hiển thị Bình luận / Chế độ giao diện (`Pop-up Modal`, `Cột Phải / Side Panel`, `Cột Trái / Left Split`).
+  - [x] Lối tắt điều hướng nhanh tới trang **An toàn (Moderation)** và **Bài viết đã lưu (Saved Posts)**.
 
 ---
 
