@@ -2,7 +2,7 @@
   <div class="replies-wrapper">
     <!-- Quick Reply Form -->
     <div class="quick-reply-box">
-      <img :src="currentUser.avatar" class="avatar avatar-sm" />
+      <img :src="store.currentUser.avatar" class="avatar avatar-sm" />
       <input
         type="text"
         v-model="replyText"
@@ -56,12 +56,12 @@ const props = defineProps({
   replies: { type: Array, default: () => [] }
 })
 
-const { currentUser, addReply } = useThreadsStore()
+const store = useThreadsStore()
 const replyText = ref('')
 
 function submitReply() {
   if (!replyText.value.trim()) return
-  addReply(props.postId, replyText.value.trim())
+  store.addReply(props.postId, replyText.value.trim())
   replyText.value = ''
 }
 

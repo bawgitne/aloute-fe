@@ -58,8 +58,8 @@ const handleClose = () => {
 </script>
 
 <template>
-  <div v-if="store.isAuthModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-    <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-3xl shadow-2xl overflow-hidden text-white relative">
+  <div v-if="store.isAuthModalOpen" class="modal-overlay" @click.self="handleClose">
+    <div class="modal-content max-w-md relative">
       <!-- Top Glow Accent -->
       <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 

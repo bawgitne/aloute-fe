@@ -1,12 +1,12 @@
 <template>
-  <div class="home-view-layout" :class="{ 'comments-on-left': commentDisplayMode === 'left_comments' }">
+  <div class="home-view-layout" :class="{ 'comments-on-left': store.commentDisplayMode === 'left_comments' }">
     <!-- Left Side-Panel Column (Shown when commentDisplayMode === 'left_comments') -->
     <div
-      v-if="commentDisplayMode === 'left_comments'"
+      v-if="store.commentDisplayMode === 'left_comments'"
       class="comments-column comments-column-left"
-      :style="{ transform: `translateY(${selectedPostOffsetTop}px)`, transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }"
+      :style="{ transform: `translateY(${store.selectedPostOffsetTop}px)`, transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }"
     >
-      <PostCommentsSidePanel :post="selectedPostForComments" />
+      <PostCommentsSidePanel :post="store.selectedPostForComments" />
     </div>
 
     <!-- Feed Stream Column -->
@@ -22,23 +22,23 @@
         </div>
 
         <div
-          v-for="user in store.users"
-          :key="user.id"
+          v-for="group in store.stories"
+          :key="group.id"
           class="story-item cursor-pointer"
-          @click="store.openStoryViewer({ user, items: [{ id: 'st_1', media_url: user.avatar, media_type: 'IMAGE', caption: `Story từ @${user.username}` }] })"
+          @click="store.openStoryViewer(group)"
         >
           <div class="story-avatar-ring border-2 border-indigo-500 rounded-full p-0.5">
-            <img :src="user.avatar" class="avatar avatar-lg" />
+            <img :src="group.user?.avatar || store.currentUser.avatar" class="avatar avatar-lg rounded-full object-cover" />
           </div>
-          <small class="truncate-name">{{ user.display_name }}</small>
+          <small class="truncate-name">{{ group.user?.display_name || group.user?.username }}</small>
         </div>
       </div>
 
       <!-- Quick Post Creator Box -->
-      <div class="card-social quick-create-card" @click="isCreatePostModalOpen = true">
+      <div class="card-social quick-create-card" @click="store.isCreatePostModalOpen = true">
         <div class="quick-create-top">
-          <img :src="currentUser.avatar" class="avatar avatar-md" />
-          <div class="fake-input">Start a thread or ask a question...</div>
+          <img :src="store.currentUser.avatar" class="avatar avatar-md" />
+          <div class="fake-input">Bạn đang nghĩ gì?...</div>
         </div>
         <div class="quick-create-toolbar">
           <button class="quick-btn text-success"><i class="fa-solid fa-image"></i> Photo/Video</button>
@@ -51,26 +51,26 @@
       <div class="card-social feed-filter-bar">
         <button
           class="filter-pill"
-          :class="{ active: activeFeedFilter === 'home' }"
-          @click="activeFeedFilter = 'home'"
+          :class="{ active: store.activeFeedFilter === 'home' }"
+          @click="store.activeFeedFilter = 'home'"
         >
-          <i class="fa-solid fa-house"></i> For You
+          <i class="fa-solid fa-house"></i> Dành cho bạn
         </button>
 
         <button
           class="filter-pill"
-          :class="{ active: activeFeedFilter === 'following' }"
-          @click="activeFeedFilter = 'following'"
+          :class="{ active: store.activeFeedFilter === 'following' }"
+          @click="store.activeFeedFilter = 'following'"
         >
-          <i class="fa-solid fa-user-group"></i> Following
+          <i class="fa-solid fa-user-group"></i> Đang theo dõi
         </button>
 
         <button
-          v-for="feed in customFeeds"
+          v-for="feed in store.customFeeds"
           :key="feed.id"
           class="filter-pill"
-          :class="{ active: activeFeedFilter === feed.id }"
-          @click="activeFeedFilter = feed.id"
+          :class="{ active: store.activeFeedFilter === feed.id }"
+          @click="store.activeFeedFilter = feed.id"
         >
           <i class="fa-solid fa-sliders"></i> {{ feed.name }}
         </button>
@@ -79,8 +79,8 @@
           v-if="isTopicFilterActive"
           class="filter-pill active topic-active-pill"
         >
-          <i class="fa-solid fa-hashtag"></i> {{ activeFeedFilter.replace('topic_', '') }}
-          <span @click.stop="activeFeedFilter = 'home'"><i class="fa-solid fa-xmark"></i></span>
+          <i class="fa-solid fa-hashtag"></i> {{ store.activeFeedFilter.replace('topic_', '') }}
+          <span @click.stop="store.activeFeedFilter = 'home'"><i class="fa-solid fa-xmark"></i></span>
         </button>
       </div>
 
@@ -96,9 +96,9 @@
           >
             <div class="recommendation-header">
               <span class="recommendation-title">
-                <i class="fa-solid fa-user-plus text-primary"></i> Recommended People to Follow
+                <i class="fa-solid fa-user-plus text-primary"></i> Gợi ý theo dõi
               </span>
-              <small class="text-muted">Based on your topics</small>
+              <small class="text-muted">Dựa trên chủ đề của bạn</small>
             </div>
 
             <div class="recommendation-users-row">
@@ -113,7 +113,7 @@
                 <button
                   class="btn-sm"
                   :class="usr.is_following ? 'btn-outline' : 'btn-primary'"
-                  @click="usr.is_following ? unfollowUser(usr) : followUser(usr)"
+                  @click="usr.is_following ? store.unfollowUser(usr) : store.followUser(usr)"
                 >
                   {{ usr.is_following ? 'Following' : 'Follow' }}
                 </button>
@@ -124,19 +124,19 @@
 
         <div v-if="!filteredPosts.length" class="card-social empty-feed">
           <i class="fa-solid fa-newspaper empty-icon"></i>
-          <h3>No threads found for this feed filter</h3>
-          <p>Try switching feed tabs or create the first post!</p>
+          <h3>Không tìm thấy bài viết nào</h3>
+          <p>Thử chuyển sang feed khác hoặc tạo bài viết mới!</p>
         </div>
       </div>
     </div>
 
     <!-- Right Side-Panel Column (Shown ONLY when commentDisplayMode === 'sidebar') -->
     <div
-      v-if="commentDisplayMode === 'sidebar'"
+      v-if="store.commentDisplayMode === 'sidebar'"
       class="comments-column comments-column-right"
-      :style="{ transform: `translateY(${selectedPostOffsetTop}px)`, transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }"
+      :style="{ transform: `translateY(${store.selectedPostOffsetTop}px)`, transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }"
     >
-      <PostCommentsSidePanel :post="selectedPostForComments" />
+      <PostCommentsSidePanel :post="store.selectedPostForComments" />
     </div>
   </div>
 </template>
@@ -148,28 +148,19 @@ import PostCard from '@/components/post/PostCard.vue'
 import PostCommentsSidePanel from '@/components/post/PostCommentsSidePanel.vue'
 
 const store = useThreadsStore()
-const {
-  currentUser,
-  users,
-  posts,
-  customFeeds,
-  activeFeedFilter,
-  activeTab,
-  selectedProfileUser,
-  selectedPostForComments,
-  selectedPostOffsetTop,
-  commentDisplayMode,
-  isCreatePostModalOpen,
-  followUser,
-  unfollowUser
-} = store
 
-const isTopicFilterActive = computed(() => activeFeedFilter.value.startsWith('topic_'))
+const filterValue = computed(() => {
+  const val = store.activeFeedFilter
+  return typeof val === 'string' ? val : (val?.value || 'home')
+})
 
-const recommendedUsers = computed(() => users.filter(u => u.id !== currentUser.id))
+const isTopicFilterActive = computed(() => filterValue.value.startsWith('topic_'))
+
+const recommendedUsers = computed(() => store.users.filter(u => u.id !== store.currentUser.id))
 
 const filteredPosts = computed(() => {
-  let basePosts = posts.filter(p => {
+  const activeFilter = filterValue.value
+  let basePosts = store.posts.filter(p => {
     // Filter out Blocked / Muted users
     const isBlocked = p.user?.is_blocked || store.moderation.blockedUsers.some(u => u.id === p.user_id)
     const isMuted = p.user?.is_muted || store.moderation.mutedUsers.some(u => u.id === p.user_id)
@@ -177,31 +168,31 @@ const filteredPosts = computed(() => {
 
     // Enforce Visibility
     const vis = (p.visibility || 'PUBLIC').toUpperCase()
-    const isAuthor = p.user_id === currentUser.id
+    const isAuthor = p.user_id === store.currentUser.id
     if (vis === 'FOLLOWERS') {
-      const isFollowing = p.user?.is_following || users.some(u => u.id === p.user_id && u.is_following)
+      const isFollowing = p.user?.is_following || store.users.some(u => u.id === p.user_id && u.is_following)
       if (!isAuthor && !isFollowing) return false
     }
     if (vis === 'MENTIONED') {
-      const isMentioned = p.content?.includes(`@${currentUser.username}`)
+      const isMentioned = p.content?.includes(`@${store.currentUser.username}`)
       if (!isAuthor && !isMentioned) return false
     }
 
     return true
   })
 
-  if (activeFeedFilter.value === 'home') {
+  if (activeFilter === 'home') {
     return basePosts
   }
-  if (activeFeedFilter.value === 'following') {
-    const followingIds = users.filter(u => u.is_following).map(u => u.id)
-    return basePosts.filter(p => followingIds.includes(p.user_id) || p.user_id === currentUser.id)
+  if (activeFilter === 'following') {
+    const followingIds = store.users.filter(u => u.is_following).map(u => u.id)
+    return basePosts.filter(p => followingIds.includes(p.user_id) || p.user_id === store.currentUser.id)
   }
   if (isTopicFilterActive.value) {
-    const topicName = activeFeedFilter.value.replace('topic_', '')
+    const topicName = activeFilter.replace('topic_', '')
     return basePosts.filter(p => p.topics && p.topics.includes(topicName))
   }
-  const targetFeed = customFeeds.find(f => f.id === activeFeedFilter.value)
+  const targetFeed = store.customFeeds.find(f => f.id === activeFilter)
   if (targetFeed) {
     return basePosts.filter(p => {
       const matchTopic = p.topics && p.topics.some(t => targetFeed.topics.includes(t))
@@ -213,8 +204,8 @@ const filteredPosts = computed(() => {
 })
 
 function openProfile(usr) {
-  selectedProfileUser.value = usr
-  activeTab.value = 'profile'
+  store.selectedProfileUser = usr
+  store.activeTab = 'profile'
 }
 </script>
 

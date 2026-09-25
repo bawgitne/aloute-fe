@@ -159,10 +159,10 @@
         <button
           class="btn-action"
           :class="{ active: post.is_bookmarked }"
-          @click="store.toggleBookmark(post)"
-          title="Bookmark"
+          @click.stop="store.toggleBookmark(post)"
+          :title="post.is_bookmarked ? 'Bỏ lưu bài viết' : 'Lưu bài viết (Bookmark)'"
         >
-          <i :class="post.is_bookmarked ? 'fa-solid fa-bookmark text-primary' : 'fa-regular fa-bookmark'"></i>
+          <i :class="post.is_bookmarked ? 'fa-solid fa-bookmark text-amber-400' : 'fa-regular fa-bookmark'"></i>
         </button>
       </div>
 
@@ -179,6 +179,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 import PollWidget from './PollWidget.vue'
 import QuoteCard from './QuoteCard.vue'
@@ -188,6 +189,7 @@ const props = defineProps({
 })
 
 const store = useThreadsStore()
+const router = useRouter()
 
 const cardRef = ref(null)
 const showMenu = ref(false)
@@ -223,15 +225,31 @@ const canQuote = computed(() => {
 
 function handleTextClick(e) {
   const target = e.target
-  if (target && target.tagName === 'SPAN' && target.dataset.mention) {
-    e.stopPropagation()
-    const username = target.dataset.mention
-    const foundUser = store.users.find(u => u.username === username)
-    if (foundUser) {
-      store.selectedProfileUser = foundUser
-      store.activeTab = 'profile'
+  if (target && target.tagName === 'SPAN') {
+    if (target.dataset.mention) {
+      e.stopPropagation()
+      const username = target.dataset.mention
+      router.push(`/@${username}`)
+    } else if (target.innerText && target.innerText.startsWith('#')) {
+      e.stopPropagation()
+      const hashtag = target.innerText.replace('#', '').trim()
+      router.push(`/topic/${hashtag}`)
     }
   }
+}
+
+function openProfile() {
+  const matchUser = store.users.find(u => u.id === props.post.user_id) || props.post.user
+  store.selectedProfileUser = matchUser
+  if (matchUser && matchUser.username) {
+    router.push(`/@${matchUser.username}`)
+  } else {
+    router.push('/profile')
+  }
+}
+
+function selectTopic(name) {
+  router.push(`/topic/${name}`)
 }
 
 // Mention and Hashtag parsing
@@ -283,17 +301,6 @@ function getVisibilityIcon(v) {
 
 function toggleMenu() {
   showMenu.value = !showMenu.value
-}
-
-function openProfile() {
-  const matchUser = store.users.find(u => u.id === props.post.user_id) || props.post.user
-  store.selectedProfileUser = matchUser
-  store.activeTab = 'profile'
-}
-
-function selectTopic(name) {
-  store.activeFeedFilter = `topic_${name}`
-  store.activeTab = 'feed'
 }
 
 function triggerHide() {

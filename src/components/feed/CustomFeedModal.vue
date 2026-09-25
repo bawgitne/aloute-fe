@@ -21,7 +21,7 @@
           <label>Filter by Topics:</label>
           <div class="chip-picker">
             <span
-              v-for="t in topics"
+              v-for="t in store.topics"
               :key="t.id"
               class="chip"
               :class="{ selected: selectedTopics.includes(t.name) }"
@@ -36,7 +36,7 @@
           <label>Filter by Users:</label>
           <div class="chip-picker">
             <span
-              v-for="u in users"
+              v-for="u in store.users"
               :key="u.id"
               class="chip"
               :class="{ selected: selectedUsers.includes(u.username) }"
@@ -64,7 +64,7 @@ import { useThreadsStore } from '@/composables/useThreadsStore'
 
 const emit = defineEmits(['close'])
 
-const { topics, users, createCustomFeed } = useThreadsStore()
+const store = useThreadsStore()
 
 const name = ref('')
 const description = ref('')
@@ -84,7 +84,7 @@ function toggleUser(username) {
 }
 
 function submit() {
-  createCustomFeed(
+  store.createCustomFeed(
     name.value.trim(),
     description.value.trim(),
     selectedTopics.value,

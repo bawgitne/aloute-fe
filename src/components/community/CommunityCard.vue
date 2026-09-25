@@ -45,16 +45,16 @@ const props = defineProps({
   community: { type: Object, required: true }
 })
 
-const { activeTab, selectedCommunity, joinCommunity, leaveCommunity } = useThreadsStore()
+const store = useThreadsStore()
 
 function openDetail() {
-  selectedCommunity.value = props.community
-  activeTab.value = 'community_detail'
+  store.selectedCommunity = props.community
+  store.activeTab = 'community_detail'
 }
 
 function toggleJoin() {
-  if (props.community.is_joined) leaveCommunity(props.community)
-  else joinCommunity(props.community)
+  if (props.community.is_joined) store.leaveCommunity(props.community)
+  else store.joinCommunity(props.community)
 }
 </script>
 

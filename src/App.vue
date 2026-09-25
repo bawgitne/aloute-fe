@@ -4,77 +4,105 @@
     <Header />
 
     <!-- Main Content Body -->
-    <main class="main-container" :class="{ 'docked-sidebar-mode': commentDisplayMode === 'left_comments' }">
+    <main class="main-container" :class="{ 'docked-sidebar-mode': store.commentDisplayMode === 'left_comments' }">
       <!-- Left Sidebar Navigation -->
       <SidebarLeft />
 
       <!-- Center Dynamic View Content -->
       <section class="content-page">
-        <KeepAlive>
-          <component :is="currentViewComponent" />
-        </KeepAlive>
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" :key="$route.fullPath" />
+          </keep-alive>
+        </router-view>
       </section>
     </main>
 
     <!-- Global Floating Modals & Drawers -->
-    <CreatePostModal />
-    <EditPostModal />
     <AuthModal />
-    <CreateStoryModal />
-    <StoryViewerModal />
-    <CreateCommunityModal />
-    <CreateGroupChatModal />
+    <CreatePostModal />
+    <PostDetailModal />
+    <EditPostModal />
     <ReportModal />
     <AnalyticsModal />
-    <PostDetailModal />
+    <CreateCommunityModal />
+    <CreateGroupChatModal />
+    <CreateStoryModal />
+    <StoryViewerModal />
+
+    <!-- Global Floating Messaging Components -->
     <ChatDrawer />
     <MultiMiniChatDock />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 import Header from '@/components/layout/Header.vue'
 import SidebarLeft from '@/components/layout/SidebarLeft.vue'
-import HomeView from '@/views/HomeView.vue'
-import ProfileView from '@/views/ProfileView.vue'
-import CommunitiesView from '@/views/CommunitiesView.vue'
-import CommunityDetail from '@/components/community/CommunityDetail.vue'
-import CustomFeedsView from '@/views/CustomFeedsView.vue'
-import MessagingView from '@/views/MessagingView.vue'
-import NotificationsView from '@/views/NotificationsView.vue'
-import ModerationView from '@/views/ModerationView.vue'
-import AnalyticsView from '@/views/AnalyticsView.vue'
-import FriendsView from '@/views/FriendsView.vue'
-import CreatePostModal from '@/components/post/CreatePostModal.vue'
-import EditPostModal from '@/components/post/EditPostModal.vue'
-import AuthModal from '@/components/auth/AuthModal.vue'
-import CreateStoryModal from '@/components/story/CreateStoryModal.vue'
-import StoryViewerModal from '@/components/story/StoryViewerModal.vue'
-import CreateCommunityModal from '@/components/community/CreateCommunityModal.vue'
-import CreateGroupChatModal from '@/components/messaging/CreateGroupChatModal.vue'
-import ReportModal from '@/components/post/ReportModal.vue'
-import AnalyticsModal from '@/components/post/AnalyticsModal.vue'
-import PostDetailModal from '@/components/post/PostDetailModal.vue'
 import ChatDrawer from '@/components/messaging/ChatDrawer.vue'
 import MultiMiniChatDock from '@/components/messaging/MultiMiniChatDock.vue'
 
-const { activeTab, commentDisplayMode } = useThreadsStore()
+import AuthModal from '@/components/auth/AuthModal.vue'
+import CreatePostModal from '@/components/post/CreatePostModal.vue'
+import PostDetailModal from '@/components/post/PostDetailModal.vue'
+import EditPostModal from '@/components/post/EditPostModal.vue'
+import ReportModal from '@/components/post/ReportModal.vue'
+import AnalyticsModal from '@/components/post/AnalyticsModal.vue'
+import CreateCommunityModal from '@/components/community/CreateCommunityModal.vue'
+import CreateGroupChatModal from '@/components/messaging/CreateGroupChatModal.vue'
+import CreateStoryModal from '@/components/story/CreateStoryModal.vue'
+import StoryViewerModal from '@/components/story/StoryViewerModal.vue'
 
-const currentViewComponent = computed(() => {
-  switch (activeTab.value) {
-    case 'feed': return HomeView
-    case 'profile': return ProfileView
-    case 'communities': return CommunitiesView
-    case 'community_detail': return CommunityDetail
-    case 'custom_feeds': return CustomFeedsView
-    case 'friends': return FriendsView
-    case 'messages': return MessagingView
-    case 'notifications': return NotificationsView
-    case 'moderation': return ModerationView
-    case 'analytics': return AnalyticsView
-    default: return HomeView
-  }
+const store = useThreadsStore()
+const route = useRoute()
+
+// Sync route changes with store.activeTab
+watch(
+  () => route.path,
+  (newPath) => {
+    if (!newPath) return
+    if (newPath.startsWith('/profile') || newPath.startsWith('/@')) {
+      store.activeTab = 'profile'
+    } else if (newPath.startsWith('/friends')) {
+      store.activeTab = 'friends'
+    } else if (newPath.startsWith('/communities') || newPath.startsWith('/c/')) {
+      store.activeTab = 'communities'
+    } else if (newPath.startsWith('/custom-feeds')) {
+      store.activeTab = 'custom_feeds'
+    } else if (newPath.startsWith('/messages')) {
+      store.activeTab = 'messages'
+    } else if (newPath.startsWith('/notifications')) {
+      store.activeTab = 'notifications'
+    } else if (newPath.startsWith('/moderation')) {
+      store.activeTab = 'moderation'
+    } else if (newPath.startsWith('/analytics')) {
+      store.activeTab = 'analytics'
+    } else if (newPath.startsWith('/saved') || newPath.startsWith('/bookmarks')) {
+      store.activeTab = 'saved'
+    } else {
+      store.activeTab = 'feed'
+    }
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  store.commentDisplayMode = 'popup'
+  store.selectedPostForComments = null
+  store.isPostDetailModalOpen = false
+  store.isChatDrawerOpen = false
+  store.isCreatePostModalOpen = false
+  store.isAuthModalOpen = false
+  store.isReportModalOpen = false
+  store.isAnalyticsModalOpen = false
+  store.isCreateCommunityModalOpen = false
+  store.isCreateGroupChatModalOpen = false
+  store.isCreateStoryModalOpen = false
+  store.isStoryViewerOpen = false
+  store.isEditPostModalOpen = false
+  store.activeMiniChats = []
 })
 </script>

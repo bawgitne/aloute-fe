@@ -39,15 +39,13 @@ const handleClose = () => {
 </script>
 
 <template>
-  <div v-if="store.isEditPostModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-    <div class="w-full max-w-xl bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden text-white flex flex-col max-h-[90vh]">
+  <div v-if="store.isEditPostModalOpen" class="modal-overlay" @click.self="handleClose">
+    <div class="modal-content max-w-xl">
       <!-- Header -->
-      <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h3 class="text-lg font-bold">Chỉnh sửa bài viết</h3>
-        <button @click="handleClose" class="p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square text-primary"></i> Chỉnh sửa bài viết</h3>
+        <button @click="handleClose" class="btn-icon btn-sm">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 

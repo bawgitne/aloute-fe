@@ -50,27 +50,27 @@ const props = defineProps({
   post: { type: Object, required: true }
 })
 
-const { votePoll } = useThreadsStore()
-const poll = computed(() => props.post.poll).value
+const store = useThreadsStore()
+const poll = computed(() => props.post.poll)
 
 const hasVoted = computed(() => {
-  if (!poll) return false
-  return !!poll.user_voted_option_id || (poll.user_voted_option_ids && poll.user_voted_option_ids.length > 0)
+  if (!poll.value) return false
+  return !!poll.value.user_voted_option_id || (poll.value.user_voted_option_ids && poll.value.user_voted_option_ids.length > 0)
 })
 
 function isOptionSelected(optionId) {
-  if (!poll) return false
-  if (poll.user_voted_option_id === optionId) return true
-  return poll.user_voted_option_ids && poll.user_voted_option_ids.includes(optionId)
+  if (!poll.value) return false
+  if (poll.value.user_voted_option_id === optionId) return true
+  return poll.value.user_voted_option_ids && poll.value.user_voted_option_ids.includes(optionId)
 }
 
 function getPercentage(voteCount) {
-  if (!poll || !poll.total_votes) return 0
-  return Math.round((voteCount / poll.total_votes) * 100)
+  if (!poll.value || !poll.value.total_votes) return 0
+  return Math.round((voteCount / poll.value.total_votes) * 100)
 }
 
 function handleVote(optionId) {
-  votePoll(props.post, optionId)
+  store.votePoll(props.post, optionId)
 }
 </script>
 

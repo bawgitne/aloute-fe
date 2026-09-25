@@ -1,10 +1,10 @@
 <template>
   <div
     class="multi-mini-chat-dock"
-    :style="{ right: isChatDrawerOpen ? '338px' : '150px' }"
+    :style="{ right: store.isChatDrawerOpen ? '338px' : '150px' }"
   >
     <div
-      v-for="item in activeMiniChats"
+      v-for="item in store.activeMiniChats"
       :key="item.id"
       class="mini-chat-box-wrapper"
     >
@@ -12,7 +12,7 @@
       <div
         v-if="item.isMinimized"
         class="chat-head-pill card-social"
-        @click="toggleMinimizeMiniChat(item.id)"
+        @click="store.toggleMinimizeMiniChat(item.id)"
         :title="`Open chat with ${getConvTitle(item.conv)}`"
       >
         <div class="avatar-relative">
@@ -20,7 +20,7 @@
           <span v-if="isConvOnline(item.conv)" class="online-dot"></span>
         </div>
         <span class="pill-name">{{ getConvTitle(item.conv) }}</span>
-        <button class="btn-icon btn-xs close-pill-btn" @click.stop="closeMiniChat(item.id)">
+        <button class="btn-icon btn-xs close-pill-btn" @click.stop="store.closeMiniChat(item.id)">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -29,7 +29,7 @@
       <div v-else class="facebook-mini-window card-social">
         <!-- Window Header -->
         <div class="window-header">
-          <div class="header-partner-info" @click="toggleMinimizeMiniChat(item.id)">
+          <div class="header-partner-info" @click="store.toggleMinimizeMiniChat(item.id)">
             <div class="avatar-relative">
               <img :src="getConvAvatar(item.conv)" class="avatar avatar-xs" />
               <span v-if="isConvOnline(item.conv)" class="online-dot"></span>
@@ -43,14 +43,14 @@
           <div class="header-window-actions">
             <button
               class="btn-icon btn-xs"
-              @click="toggleMinimizeMiniChat(item.id)"
+              @click="store.toggleMinimizeMiniChat(item.id)"
               title="Minimize"
             >
               <i class="fa-solid fa-minus"></i>
             </button>
             <button
               class="btn-icon btn-xs"
-              @click="closeMiniChat(item.id)"
+              @click="store.closeMiniChat(item.id)"
               title="Close Chat"
             >
               <i class="fa-solid fa-xmark"></i>
@@ -64,7 +64,7 @@
             v-for="msg in item.conv.messages"
             :key="msg.id"
             class="mini-bubble-row"
-            :class="{ mine: msg.sender_id === currentUser.id }"
+            :class="{ mine: msg.sender_id === store.currentUser.id }"
           >
             <div class="mini-bubble">
               <p v-if="msg.content">{{ msg.content }}</p>
@@ -81,10 +81,10 @@
 
               <!-- Hover Emoji Reaction Menu -->
               <div class="reaction-picker-menu">
-                <button @click="addMessageReaction(msg, '❤️')">❤️</button>
-                <button @click="addMessageReaction(msg, '👍')">👍</button>
-                <button @click="addMessageReaction(msg, '🔥')">🔥</button>
-                <button @click="addMessageReaction(msg, '🚀')">🚀</button>
+                <button @click="store.addMessageReaction(msg, '❤️')">❤️</button>
+                <button @click="store.addMessageReaction(msg, '👍')">👍</button>
+                <button @click="store.addMessageReaction(msg, '🔥')">🔥</button>
+                <button @click="store.addMessageReaction(msg, '🚀')">🚀</button>
               </div>
             </div>
           </div>
@@ -127,15 +127,7 @@
 import { reactive, ref, nextTick, watch } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  currentUser,
-  activeMiniChats,
-  isChatDrawerOpen,
-  closeMiniChat,
-  toggleMinimizeMiniChat,
-  sendMessage,
-  addMessageReaction
-} = useThreadsStore()
+const store = useThreadsStore()
 
 const inputTexts = reactive({})
 const mediaUrls = reactive({})
@@ -161,7 +153,7 @@ function getConvAvatar(conv) {
   if (conv.type === 'DIRECT' && conv.participant) {
     return conv.participant.avatar
   }
-  return conv.group_avatar || currentUser.avatar
+  return conv.group_avatar || store.currentUser.avatar
 }
 
 function isConvOnline(conv) {
@@ -172,7 +164,7 @@ function handleSend(item) {
   const text = (inputTexts[item.id] || '').trim()
   const mediaUrl = (mediaUrls[item.id] || '').trim()
   if (!text && !mediaUrl) return
-  sendMessage(item.id, text, { media_url: mediaUrl || null })
+  store.sendMessage(item.id, text, { media_url: mediaUrl || null })
   inputTexts[item.id] = ''
   mediaUrls[item.id] = ''
   showAttachments[item.id] = false
@@ -189,10 +181,10 @@ function scrollToBottom(id) {
 }
 
 watch(
-  () => activeMiniChats.value.map(c => ({ id: c.id, len: c.conv?.messages?.length })),
+  () => (store.activeMiniChats || []).map(c => ({ id: c.id, len: c.conv?.messages?.length })),
   () => {
     nextTick(() => {
-      activeMiniChats.value.forEach(item => {
+      (store.activeMiniChats || []).forEach(item => {
         scrollToBottom(item.id)
       })
     })

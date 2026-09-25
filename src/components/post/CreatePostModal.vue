@@ -10,8 +10,8 @@
         <!-- Target Community Badge -->
         <div v-if="store.targetCommunityForCreate" class="mb-3 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs text-indigo-300 font-semibold">
           <div class="flex items-center gap-2">
-            <img :src="store.targetCommunityForCreate.avatar" class="w-5 h-5 rounded-full object-cover" />
-            <span>Cộng đồng: {{ store.targetCommunityForCreate.name }}</span>
+            <img :src="store.targetCommunityForCreate?.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover" />
+            <span>Cộng đồng: {{ store.targetCommunityForCreate?.name }}</span>
           </div>
           <button @click="store.targetCommunityForCreate = null" class="text-gray-400 hover:text-white">
             <i class="fa-solid fa-xmark"></i>
@@ -20,9 +20,9 @@
 
         <!-- User Info Header -->
         <div class="composer-user-info">
-          <img :src="store.currentUser.avatar" class="avatar avatar-md" />
+          <img :src="store.currentUser?.avatar || defaultAvatar" class="avatar avatar-md" />
           <div>
-            <strong>{{ store.currentUser.display_name }}</strong>
+            <strong>{{ store.currentUser?.display_name || store.currentUser?.username || 'Người dùng' }}</strong>
             <div class="permission-controls">
               <!-- Visibility Selector -->
               <select v-model="visibility" class="select-sm">
@@ -54,11 +54,11 @@
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="flex items-center gap-2 mb-1">
-            <img :src="store.quotedPostForCreate.user.avatar" class="w-5 h-5 rounded-full object-cover" />
-            <span class="font-bold text-white">{{ store.quotedPostForCreate.user.display_name }}</span>
-            <span class="text-gray-400">@{{ store.quotedPostForCreate.user.username }}</span>
+            <img :src="store.quotedPostForCreate?.user?.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover" />
+            <span class="font-bold text-white">{{ store.quotedPostForCreate?.user?.display_name || store.quotedPostForCreate?.user?.username }}</span>
+            <span class="text-gray-400">@{{ store.quotedPostForCreate?.user?.username }}</span>
           </div>
-          <p class="text-gray-300 line-clamp-2">{{ store.quotedPostForCreate.content }}</p>
+          <p class="text-gray-300 line-clamp-2">{{ store.quotedPostForCreate?.content }}</p>
         </div>
 
         <!-- Media URL Input Box -->
@@ -172,6 +172,7 @@ import { ref } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
 const store = useThreadsStore()
+const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
 
 const content = ref('')
 const visibility = ref('PUBLIC')

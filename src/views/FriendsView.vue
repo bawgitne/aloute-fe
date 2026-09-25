@@ -23,7 +23,7 @@
         :class="{ active: currentTab === 'all' }"
         @click="currentTab = 'all'"
       >
-        All Connections <span class="count-badge">{{ users.length }}</span>
+        All Connections <span class="count-badge">{{ otherUsers.length }}</span>
       </button>
 
       <button
@@ -96,7 +96,7 @@
           <button
             class="btn-sm action-btn"
             :class="user.is_following ? 'btn-outline' : 'btn-secondary'"
-            @click="user.is_following ? unfollowUser(user) : followUser(user)"
+            @click="user.is_following ? store.unfollowUser(user) : store.followUser(user)"
           >
             <i :class="user.is_following ? 'fa-solid fa-user-check' : 'fa-solid fa-user-plus'"></i>
             {{ user.is_following ? 'Following' : 'Follow' }}
@@ -114,23 +114,28 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  currentUser,
-  users,
-  activeTab,
-  selectedProfileUser,
-  followUser,
-  unfollowUser,
-  openMiniChat
-} = useThreadsStore()
+const store = useThreadsStore()
+const route = useRoute()
+const router = useRouter()
 
-const currentTab = ref('all')
+const currentTab = ref('following')
 const searchQuery = ref('')
 
-const otherUsers = computed(() => users.filter(u => u.id !== currentUser.id))
+onMounted(() => {
+  if (route.query.tab) {
+    currentTab.value = route.query.tab
+  }
+})
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab) currentTab.value = newTab
+})
+
+const otherUsers = computed(() => store.users.filter(u => u.id !== store.currentUser.id))
 const followingUsers = computed(() => otherUsers.value.filter(u => u.is_following))
 const followerUsers = computed(() => otherUsers.value.filter(u => u.is_follower))
 const suggestedUsers = computed(() => otherUsers.value.filter(u => !u.is_following && !u.is_follower))
@@ -153,12 +158,16 @@ const filteredList = computed(() => {
 const displayedUsers = computed(() => filteredList.value)
 
 function viewProfile(user) {
-  selectedProfileUser.value = user
-  activeTab.value = 'profile'
+  store.selectedProfileUser = user
+  if (user && user.username) {
+    router.push(`/@${user.username}`)
+  } else {
+    router.push('/profile')
+  }
 }
 
 function messageUser(user) {
-  openMiniChat(user)
+  store.openMiniChat(user)
 }
 </script>
 

@@ -47,8 +47,8 @@
     </div>
 
     <!-- Admin Settings Modal -->
-    <div v-if="showAdminModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div class="w-full max-w-xl bg-gray-900 border border-gray-800 rounded-2xl p-6 text-white space-y-4 max-h-[85vh] overflow-y-auto">
+    <div v-if="showAdminModal" class="modal-overlay" @click.self="showAdminModal = false">
+      <div class="modal-content max-w-xl">
         <div class="flex justify-between items-center border-b border-gray-800 pb-3">
           <h3 class="font-bold text-lg"><i class="fa-solid fa-shield-halved text-indigo-400"></i> Quản Trị Cộng Đồng</h3>
           <button @click="showAdminModal = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>

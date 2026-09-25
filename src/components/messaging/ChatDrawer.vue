@@ -3,14 +3,14 @@
     <!-- White Floating Launcher Button Pinned to Bottom Right -->
     <button
       class="floating-chat-trigger-btn"
-      :class="{ 'hidden-launcher': isChatDrawerOpen }"
+      :class="{ 'hidden-launcher': store.isChatDrawerOpen }"
       @click="toggleChatDrawer"
       title="Messages"
     >
       <div class="icon-box">
         <i class="fa-regular fa-paper-plane text-dark-icon"></i>
-        <span v-if="totalUnreadCount > 0" class="floating-unread-badge">
-          {{ totalUnreadCount }}
+        <span v-if="store.totalUnreadCount > 0" class="floating-unread-badge">
+          {{ store.totalUnreadCount }}
         </span>
       </div>
       <span class="btn-label">Messages</span>
@@ -18,7 +18,7 @@
 
     <!-- Instagram-Style Direct Message Pop-up Drawer (Super-Fast Expansion from Bottom Right) -->
     <transition name="ig-expand">
-      <div v-if="isChatDrawerOpen" class="ig-chat-drawer card-social">
+      <div v-if="store.isChatDrawerOpen" class="ig-chat-drawer card-social">
         <!-- Drawer Header -->
         <div class="drawer-header">
           <!-- Back button if in active chat subview -->
@@ -49,7 +49,12 @@
 
           <!-- Header Actions -->
           <div class="header-actions flex items-center gap-1">
-            <button v-if="store.chatDrawerSubView === 'list'" @click="store.isCreateGroupChatModalOpen = true" class="btn-icon btn-sm text-indigo-400" title="Tạo nhóm chat">
+            <button
+              v-if="store.chatDrawerSubView === 'list'"
+              @click="openCreateGroupChat"
+              class="btn-icon btn-sm text-indigo-400"
+              title="Tạo nhóm chat"
+            >
               <i class="fa-solid fa-users-plus"></i>
             </button>
             <button class="btn-icon btn-sm" @click="store.isChatDrawerOpen = false" title="Minimize Panel">
@@ -124,7 +129,7 @@
           <!-- Messages Stream Body -->
           <div class="window-messages-body" ref="messagesContainer">
             <div
-              v-for="msg in store.selectedConversation.messages"
+              v-for="msg in (store.selectedConversation?.messages || [])"
               :key="msg.id"
               class="mini-bubble-row"
               :class="{ mine: msg.sender_id === store.currentUser.id }"
@@ -138,8 +143,8 @@
                 <p>{{ msg.content }}</p>
 
                 <!-- Media preview if any -->
-                <div v-if="msg.media_url" class="mt-1 rounded-lg overflow-hidden max-h-32 bg-black">
-                  <img :src="msg.media_url" class="max-h-32 object-contain" />
+                <div v-if="msg.media_url || msg.media?.[0]?.url" class="mt-1 rounded-lg overflow-hidden max-h-32 bg-black">
+                  <img :src="msg.media_url || msg.media?.[0]?.url" class="max-h-32 object-contain" />
                 </div>
 
                 <div class="bubble-meta flex items-center justify-between gap-2">
@@ -220,6 +225,12 @@ function toggleChatDrawer() {
   }
 }
 
+function openCreateGroupChat() {
+  // Do not leave the drawer underneath a full-screen modal.
+  store.isChatDrawerOpen = false
+  store.isCreateGroupChatModalOpen = true
+}
+
 const filteredConversations = computed(() => {
   if (!searchQuery.value.trim()) return store.conversations
   const q = searchQuery.value.toLowerCase()
@@ -287,7 +298,7 @@ function scrollToBottom() {
   }
 }
 
-watch(() => store.selectedConversation?.messages.length, () => {
+watch(() => store.selectedConversation?.messages?.length, () => {
   nextTick(() => scrollToBottom())
 })
 </script>

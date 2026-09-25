@@ -11,10 +11,10 @@
 
           <div class="profile-actions">
             <!-- If Current User -->
-            <template v-if="user.id === currentUser.id">
+            <template v-if="user.id === store.currentUser.id">
               <button
                 class="btn-outline"
-                @click="activeTab = 'analytics'"
+                @click="store.activeTab = 'analytics'"
                 title="View Account Analytics"
               >
                 <i class="fa-solid fa-chart-line"></i> Analytics
@@ -33,9 +33,17 @@
               <button
                 class="btn-primary"
                 :class="{ 'btn-outline': user.is_following }"
-                @click="user.is_following ? unfollowUser(user) : followUser(user)"
+                @click="user.is_following ? store.unfollowUser(user) : store.followUser(user)"
               >
                 {{ user.is_following ? 'Following' : 'Follow' }}
+              </button>
+
+              <button
+                class="btn-outline font-bold text-xs"
+                @click="store.openMiniChat(user)"
+                title="Nhắn tin trực tiếp"
+              >
+                <i class="fa-regular fa-paper-plane"></i> Nhắn tin
               </button>
 
               <button class="btn-icon" @click="toggleSafetyMenu" title="Safety Settings">
@@ -43,13 +51,13 @@
               </button>
 
               <div v-if="showSafetyMenu" class="safety-menu-dropdown card-social">
-                <button class="safety-item" @click="muteUser(user)">
+                <button class="safety-item" @click="store.muteUser(user)">
                   <i class="fa-solid fa-volume-xmark"></i> Mute @{{ user.username }}
                 </button>
-                <button class="safety-item text-danger" @click="blockUser(user)">
+                <button class="safety-item text-danger" @click="store.blockUser(user)">
                   <i class="fa-solid fa-user-slash"></i> Block @{{ user.username }}
                 </button>
-                <button class="safety-item text-amber-400" @click="reportUser(user)">
+                <button class="safety-item text-amber-400" @click="store.reportUser(user)">
                   <i class="fa-solid fa-flag"></i> Báo cáo @{{ user.username }}
                 </button>
               </div>
@@ -116,15 +124,7 @@ const props = defineProps({
   user: { type: Object, required: true }
 })
 
-const {
-  currentUser,
-  activeTab,
-  followUser,
-  unfollowUser,
-  blockUser,
-  muteUser,
-  reportUser
-} = useThreadsStore()
+const store = useThreadsStore()
 
 const showEditModal = ref(false)
 const showSafetyMenu = ref(false)

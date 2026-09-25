@@ -35,7 +35,7 @@
           Media
         </button>
         <button
-          v-if="targetUser.id === currentUser.id"
+          v-if="targetUser.id === store.currentUser.id"
           class="tab-btn"
           :class="{ active: currentTab === 'bookmarks' }"
           @click="currentTab = 'bookmarks'"
@@ -63,31 +63,48 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 import ProfileHeader from '@/components/profile/ProfileHeader.vue'
 import PostCard from '@/components/post/PostCard.vue'
 
-const { currentUser, selectedProfileUser, posts } = useThreadsStore()
+const store = useThreadsStore()
+const route = useRoute()
 
-const targetUser = computed(() => selectedProfileUser.value || currentUser)
+const props = defineProps({
+  username: { type: String, default: '' }
+})
+
+const targetUser = computed(() => {
+  const paramUsername = props.username || route.params.username
+  if (paramUsername) {
+    if (paramUsername === store.currentUser.username) {
+      return store.currentUser
+    }
+    const found = store.users.find(u => u.username === paramUsername)
+    if (found) return found
+  }
+  return store.selectedProfileUser || store.currentUser
+})
+
 const currentTab = ref('posts')
 
 const tabPosts = computed(() => {
   const uid = targetUser.value.id
   if (currentTab.value === 'posts') {
-    return posts.filter(p => p.user_id === uid && !p.parent_post_id)
+    return store.posts.filter(p => p.user_id === uid && !p.parent_post_id)
   }
   if (currentTab.value === 'replies') {
-    return posts.filter(p => (p.replies && p.replies.some(r => r.user_id === uid)) || (p.user_id === uid && p.parent_post_id))
+    return store.posts.filter(p => (p.replies && p.replies.some(r => r.user_id === uid)) || (p.user_id === uid && p.parent_post_id))
   }
   if (currentTab.value === 'reposts') {
-    return posts.filter(p => p.is_reposted || (p.quoted_post && p.user_id === uid))
+    return store.posts.filter(p => p.is_reposted || (p.quoted_post && p.user_id === uid))
   }
   if (currentTab.value === 'media') {
-    return posts.filter(p => p.user_id === uid && p.media && p.media.length)
+    return store.posts.filter(p => p.user_id === uid && p.media && p.media.length)
   }
   if (currentTab.value === 'bookmarks') {
-    return posts.filter(p => p.is_bookmarked)
+    return store.posts.filter(p => p.is_bookmarked)
   }
   return []
 })

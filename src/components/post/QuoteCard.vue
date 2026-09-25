@@ -22,13 +22,13 @@ const props = defineProps({
   quotedPostData: { type: Object, default: null }
 })
 
-const { posts } = useThreadsStore()
+const store = useThreadsStore()
 
 const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
 
 const quotedPost = computed(() => {
   if (props.quotedPostData) return props.quotedPostData
-  return posts.find(p => p.id === props.quotedPostId) || null
+  return (store.posts || []).find(p => p.id === props.quotedPostId) || null
 })
 
 const quotedUser = computed(() => {

@@ -8,10 +8,10 @@
 
       <div class="conv-list">
         <div
-          v-for="conv in conversations"
+          v-for="conv in store.conversations"
           :key="conv.id"
           class="conv-item"
-          :class="{ active: selectedConversation && selectedConversation.id === conv.id }"
+          :class="{ active: store.selectedConversation && store.selectedConversation.id === conv.id }"
           @click="selectConv(conv)"
         >
           <div class="avatar-wrapper">
@@ -28,9 +28,9 @@
               <p class="truncate">{{ conv.last_message }}</p>
               <div class="item-actions-right">
                 <button
-                  v-if="commentDisplayMode === 'left_comments'"
+                  v-if="store.commentDisplayMode === 'left_comments'"
                   class="btn-icon btn-xs popout-icon-btn"
-                  @click.stop="openMiniChat(conv)"
+                  @click.stop="store.openMiniChat(conv)"
                   title="Đẩy ra cửa sổ mini Facebook"
                 >
                   <i class="fa-solid fa-up-right-from-square"></i>
@@ -44,14 +44,14 @@
     </div>
 
     <!-- Active Chat Thread -->
-    <div v-if="selectedConversation" class="chat-thread-panel">
+    <div v-if="store.selectedConversation" class="chat-thread-panel">
       <!-- Left Comments Mode Active Notification Banner -->
-      <div v-if="commentDisplayMode === 'left_comments'" class="mini-popout-alert-bar">
+      <div v-if="store.commentDisplayMode === 'left_comments'" class="mini-popout-alert-bar">
         <div class="alert-info-text">
           <i class="fa-solid fa-comment-dots text-primary"></i>
           <span><strong>Chế độ Left Split:</strong> Cuộc trò chuyện đã đẩy ra cửa sổ mini Facebook ở góc màn hình!</span>
         </div>
-        <button class="btn-sm btn-primary" @click="openMiniChat(selectedConversation)">
+        <button class="btn-sm btn-primary" @click="store.openMiniChat(store.selectedConversation)">
           <i class="fa-solid fa-up-right-from-square"></i> Mở Mini Chat
         </button>
       </div>
@@ -66,9 +66,9 @@
           </div>
         </div>
         <button
-          v-if="commentDisplayMode === 'left_comments'"
+          v-if="store.commentDisplayMode === 'left_comments'"
           class="btn-outline btn-sm"
-          @click="openMiniChat(selectedConversation)"
+          @click="store.openMiniChat(store.selectedConversation)"
           title="Đẩy ra cửa sổ mini"
         >
           <i class="fa-solid fa-up-right-from-square"></i> Floating Window
@@ -78,10 +78,10 @@
       <!-- Messages Stream -->
       <div class="thread-messages-body" ref="messagesBody">
         <div
-          v-for="msg in selectedConversation.messages"
+          v-for="msg in store.selectedConversation.messages"
           :key="msg.id"
           class="msg-bubble-row"
-          :class="{ mine: msg.sender_id === currentUser.id }"
+          :class="{ mine: msg.sender_id === store.currentUser.id }"
         >
           <div class="msg-bubble">
             <p>{{ msg.content }}</p>
@@ -94,10 +94,10 @@
 
             <!-- Reaction Menu -->
             <div class="reaction-menu">
-              <button @click="addMessageReaction(msg, '❤️')">❤️</button>
-              <button @click="addMessageReaction(msg, '👍')">👍</button>
-              <button @click="addMessageReaction(msg, '🔥')">🔥</button>
-              <button @click="addMessageReaction(msg, '🚀')">🚀</button>
+              <button @click="store.addMessageReaction(msg, '❤️')">❤️</button>
+              <button @click="store.addMessageReaction(msg, '👍')">👍</button>
+              <button @click="store.addMessageReaction(msg, '🔥')">🔥</button>
+              <button @click="store.addMessageReaction(msg, '🚀')">🚀</button>
             </div>
           </div>
         </div>
@@ -123,43 +123,35 @@
 import { ref, computed, nextTick } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  currentUser,
-  conversations,
-  selectedConversation,
-  commentDisplayMode,
-  sendMessage,
-  addMessageReaction,
-  openMiniChat
-} = useThreadsStore()
+const store = useThreadsStore()
 
 const inputText = ref('')
 const messagesBody = ref(null)
 
 function selectConv(conv) {
-  selectedConversation.value = conv
-  if (commentDisplayMode.value === 'left_comments') {
-    openMiniChat(conv)
+  store.selectedConversation = conv
+  if (store.commentDisplayMode === 'left_comments') {
+    store.openMiniChat(conv)
   }
 }
 
 const convTitle = computed(() => {
-  if (!selectedConversation.value) return ''
-  return selectedConversation.value.participant
-    ? selectedConversation.value.participant.name
-    : selectedConversation.value.group_name
+  if (!store.selectedConversation) return ''
+  return store.selectedConversation.participant
+    ? store.selectedConversation.participant.name
+    : store.selectedConversation.group_name
 })
 
 const convAvatar = computed(() => {
-  if (!selectedConversation.value) return ''
-  return selectedConversation.value.participant
-    ? selectedConversation.value.participant.avatar
-    : selectedConversation.value.group_avatar
+  if (!store.selectedConversation) return ''
+  return store.selectedConversation.participant
+    ? store.selectedConversation.participant.avatar
+    : store.selectedConversation.group_avatar
 })
 
 function send() {
-  if (!inputText.value.trim() || !selectedConversation.value) return
-  sendMessage(selectedConversation.value.id, inputText.value.trim())
+  if (!inputText.value.trim() || !store.selectedConversation) return
+  store.sendMessage(store.selectedConversation.id, inputText.value.trim())
   inputText.value = ''
   nextTick(() => {
     if (messagesBody.value) {

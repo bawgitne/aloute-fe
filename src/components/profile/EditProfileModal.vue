@@ -66,15 +66,15 @@ import { ref, reactive } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
 const emit = defineEmits(['close'])
-const { currentUser } = useThreadsStore()
+const store = useThreadsStore()
 
-const displayName = ref(currentUser.display_name)
-const bio = ref(currentUser.bio)
-const website = ref(currentUser.website)
-const avatar = ref(currentUser.avatar)
-const cover = ref(currentUser.cover)
-const isPrivate = ref(currentUser.is_private || false)
-const links = reactive(currentUser.links ? JSON.parse(JSON.stringify(currentUser.links)) : [])
+const displayName = ref(store.currentUser.display_name)
+const bio = ref(store.currentUser.bio)
+const website = ref(store.currentUser.website)
+const avatar = ref(store.currentUser.avatar)
+const cover = ref(store.currentUser.cover)
+const isPrivate = ref(store.currentUser.is_private || false)
+const links = reactive(store.currentUser.links ? JSON.parse(JSON.stringify(store.currentUser.links)) : [])
 
 function addLink() {
   links.push({ title: '', url: '' })
@@ -85,13 +85,13 @@ function removeLink(idx) {
 }
 
 function save() {
-  currentUser.display_name = displayName.value
-  currentUser.bio = bio.value
-  currentUser.website = website.value
-  currentUser.avatar = avatar.value
-  currentUser.cover = cover.value
-  currentUser.is_private = isPrivate.value
-  currentUser.links = links.filter(l => l.title.trim() && l.url.trim())
+  store.currentUser.display_name = displayName.value
+  store.currentUser.bio = bio.value
+  store.currentUser.website = website.value
+  store.currentUser.avatar = avatar.value
+  store.currentUser.cover = cover.value
+  store.currentUser.is_private = isPrivate.value
+  store.currentUser.links = links.filter(l => l.title.trim() && l.url.trim())
   emit('close')
 }
 </script>

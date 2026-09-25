@@ -1,7 +1,7 @@
 <template>
   <transition name="modal-fade">
     <div
-      v-if="isPostDetailModalOpen && selectedPostForComments"
+      v-if="store.isPostDetailModalOpen && store.selectedPostForComments"
       class="post-modal-backdrop"
       @click.self="closeModal"
     >
@@ -16,32 +16,32 @@
           <div class="post-detail-left">
             <!-- Author Header -->
             <div class="post-author-header">
-              <img :src="selectedPostForComments.user.avatar" class="avatar avatar-md" />
+              <img :src="store.selectedPostForComments.user.avatar" class="avatar avatar-md" />
               <div class="author-info">
                 <div class="author-title">
-                  <strong class="author-name">{{ selectedPostForComments.user.name }}</strong>
-                  <i v-if="selectedPostForComments.user.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
-                  <span class="author-username">@{{ selectedPostForComments.user.username }}</span>
+                  <strong class="author-name">{{ store.selectedPostForComments.user.name }}</strong>
+                  <i v-if="store.selectedPostForComments.user.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
+                  <span class="author-username">@{{ store.selectedPostForComments.user.username }}</span>
                 </div>
-                <span class="post-time">{{ selectedPostForComments.created_at }}</span>
+                <span class="post-time">{{ store.selectedPostForComments.created_at }}</span>
               </div>
             </div>
 
             <!-- Main Post Body Content -->
             <div class="post-detail-body">
-              <p class="post-text">{{ selectedPostForComments.content }}</p>
+              <p class="post-text">{{ store.selectedPostForComments.content }}</p>
 
               <!-- Topic Hashtags -->
-              <div v-if="selectedPostForComments.topics && selectedPostForComments.topics.length" class="topic-tags">
-                <span v-for="t in selectedPostForComments.topics" :key="t" class="topic-tag">
+              <div v-if="store.selectedPostForComments.topics && store.selectedPostForComments.topics.length" class="topic-tags">
+                <span v-for="t in store.selectedPostForComments.topics" :key="t" class="topic-tag">
                   #{{ t }}
                 </span>
               </div>
 
               <!-- Media Attachments -->
-              <div v-if="selectedPostForComments.media && selectedPostForComments.media.length" class="post-media-grid">
+              <div v-if="store.selectedPostForComments.media && store.selectedPostForComments.media.length" class="post-media-grid">
                 <img
-                  v-for="m in selectedPostForComments.media"
+                  v-for="m in store.selectedPostForComments.media"
                   :key="m.id"
                   :src="m.url"
                   class="media-img"
@@ -49,13 +49,13 @@
               </div>
 
               <!-- Interactive Poll Widget -->
-              <PollWidget v-if="selectedPostForComments.poll" :post="selectedPostForComments" />
+              <PollWidget v-if="store.selectedPostForComments.poll" :post="store.selectedPostForComments" />
 
               <!-- Quoted Post -->
               <QuoteCard
-                v-if="selectedPostForComments.quoted_post_id || selectedPostForComments.quoted_post"
-                :quotedPostId="selectedPostForComments.quoted_post_id || ''"
-                :quotedPostData="selectedPostForComments.quoted_post"
+                v-if="store.selectedPostForComments.quoted_post_id || store.selectedPostForComments.quoted_post"
+                :quotedPostId="store.selectedPostForComments.quoted_post_id || ''"
+                :quotedPostData="store.selectedPostForComments.quoted_post"
               />
             </div>
 
@@ -64,11 +64,11 @@
               <div class="post-actions">
                 <button
                   class="btn-action"
-                  :class="{ active: selectedPostForComments.is_liked }"
-                  @click="toggleLikePost(selectedPostForComments)"
+                  :class="{ active: store.selectedPostForComments.is_liked }"
+                  @click="store.toggleLikePost(store.selectedPostForComments)"
                 >
-                  <i :class="selectedPostForComments.is_liked ? 'fa-solid fa-heart text-danger' : 'fa-regular fa-heart'"></i>
-                  <span>{{ selectedPostForComments.like_count }}</span>
+                  <i :class="store.selectedPostForComments.is_liked ? 'fa-solid fa-heart text-danger' : 'fa-regular fa-heart'"></i>
+                  <span>{{ store.selectedPostForComments.like_count }}</span>
                 </button>
 
                 <button
@@ -76,34 +76,34 @@
                   title="Replies"
                 >
                   <i class="fa-regular fa-comment"></i>
-                  <span>{{ selectedPostForComments.reply_count }}</span>
+                  <span>{{ store.selectedPostForComments.reply_count }}</span>
                 </button>
 
                 <button
                   class="btn-action"
-                  :class="{ active: selectedPostForComments.is_reposted }"
-                  @click="toggleRepost(selectedPostForComments)"
+                  :class="{ active: store.selectedPostForComments.is_reposted }"
+                  @click="store.toggleRepost(store.selectedPostForComments)"
                 >
-                  <i :class="selectedPostForComments.is_reposted ? 'fa-solid fa-retweet text-success' : 'fa-solid fa-retweet'"></i>
-                  <span>{{ selectedPostForComments.repost_count }}</span>
+                  <i :class="store.selectedPostForComments.is_reposted ? 'fa-solid fa-retweet text-success' : 'fa-solid fa-retweet'"></i>
+                  <span>{{ store.selectedPostForComments.repost_count }}</span>
                 </button>
 
                 <button
                   class="btn-action"
-                  :class="{ active: selectedPostForComments.is_bookmarked }"
-                  @click="toggleBookmark(selectedPostForComments)"
+                  :class="{ active: store.selectedPostForComments.is_bookmarked }"
+                  @click="store.toggleBookmark(store.selectedPostForComments)"
                 >
-                  <i :class="selectedPostForComments.is_bookmarked ? 'fa-solid fa-bookmark text-primary' : 'fa-regular fa-bookmark'"></i>
+                  <i :class="store.selectedPostForComments.is_bookmarked ? 'fa-solid fa-bookmark text-primary' : 'fa-regular fa-bookmark'"></i>
                 </button>
               </div>
 
-              <span class="views-count"><i class="fa-solid fa-chart-simple"></i> {{ selectedPostForComments.view_count }} views</span>
+              <span class="views-count"><i class="fa-solid fa-chart-simple"></i> {{ store.selectedPostForComments.view_count }} views</span>
             </div>
           </div>
 
           <!-- RIGHT COLUMN: Comments Panel with Level 3 tree branches -->
           <div class="post-detail-right">
-            <PostCommentsSidePanel :post="selectedPostForComments" />
+            <PostCommentsSidePanel :post="store.selectedPostForComments" />
           </div>
         </div>
       </div>
@@ -118,20 +118,14 @@ import PollWidget from './PollWidget.vue'
 import QuoteCard from './QuoteCard.vue'
 import PostCommentsSidePanel from './PostCommentsSidePanel.vue'
 
-const {
-  selectedPostForComments,
-  isPostDetailModalOpen,
-  toggleLikePost,
-  toggleRepost,
-  toggleBookmark
-} = useThreadsStore()
+const store = useThreadsStore()
 
 function closeModal() {
-  isPostDetailModalOpen.value = false
+  store.isPostDetailModalOpen = false
 }
 
 function handleKeydown(e) {
-  if (e.key === 'Escape' && isPostDetailModalOpen.value) {
+  if (e.key === 'Escape' && store.isPostDetailModalOpen) {
     closeModal()
   }
 }

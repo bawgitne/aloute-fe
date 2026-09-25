@@ -1,4 +1,4 @@
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, isRef } from 'vue'
 
 // Current Active User
 const currentUser = reactive({
@@ -430,21 +430,21 @@ const stories = reactive([
     id: 'story_group_1',
     user: currentUser,
     items: [
-      { id: 'st_1', type: 'IMAGE', mediaUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80', caption: 'Building the new SocialV architecture! 🚀', created_at: '2 hours ago' }
+      { id: 'st_1', media_type: 'IMAGE', media_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80', caption: 'Building the new SocialV architecture! 🚀', created_at: '2 hours ago' }
     ]
   },
   {
     id: 'story_group_2',
     user: users[0], // Sarah Chen
     items: [
-      { id: 'st_2', type: 'TEXT', caption: 'Just launched our Vue 3 design system update!', bg: 'linear-gradient(135deg, #6f42c1, #00d084)', created_at: '4 hours ago' }
+      { id: 'st_2', media_type: 'TEXT', media_url: null, bg: 'linear-gradient(135deg, #6f42c1, #00d084)', caption: 'Just launched our Vue 3 design system update! ✨', created_at: '4 hours ago' }
     ]
   },
   {
     id: 'story_group_3',
     user: users[1], // Marcus Vance
     items: [
-      { id: 'st_3', type: 'IMAGE', mediaUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80', caption: 'Testing autonomous agent execution limits 🤖', created_at: '5 hours ago' }
+      { id: 'st_3', media_type: 'IMAGE', media_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80', caption: 'Testing autonomous agent execution limits 🤖', created_at: '5 hours ago' }
     ]
   }
 ])
@@ -462,8 +462,9 @@ const activeFeedFilter = ref('home')
 const selectedCommunity = ref(communities[0])
 const selectedConversation = ref(conversations[0])
 const selectedProfileUser = ref(currentUser)
-const commentDisplayMode = ref('left_comments') // 'sidebar' | 'popup' | 'left_comments'
-const selectedPostForComments = ref(posts[0]) // Selected post to show comments side-panel
+// Start on a clean feed. Comments are opened explicitly when the user clicks a post.
+const commentDisplayMode = ref('popup') // 'sidebar' | 'popup' | 'left_comments'
+const selectedPostForComments = ref(null) // No post/panel selected on initial load
 const selectedPostOffsetTop = ref(0) // Vertical offset of selected post card relative to feed container
 const isPostDetailModalOpen = ref(false)
 const isChatDrawerOpen = ref(false)
@@ -1054,8 +1055,54 @@ function markNotificationRead(notifId) {
   if (notif) notif.is_read = true
 }
 
-export function useThreadsStore() {
-  return {
+// Additional missing handlers
+
+function createStory(storyData) {
+  if (!checkAuth('Tạo tin câu chuyện')) return
+  const newItem = {
+    id: `st_${Date.now()}`,
+    media_url: storyData.media_url || currentUser.avatar,
+    media_type: storyData.media_type || 'IMAGE',
+    caption: storyData.caption || ''
+  }
+
+  let existingGroup = stories.find(g => g.user.id === currentUser.id)
+  if (existingGroup) {
+    existingGroup.items.push(newItem)
+    openStoryViewer(existingGroup)
+  } else {
+    const newGroup = {
+      id: `st_g_${Date.now()}`,
+      user: { ...currentUser },
+      items: [newItem]
+    }
+    stories.unshift(newGroup)
+    openStoryViewer(newGroup)
+  }
+  isCreateStoryModalOpen.value = false
+}
+
+function openStoryViewer(storyGroup) {
+  activeStoryGroup.value = storyGroup
+  isStoryViewerOpen.value = true
+}
+
+function deleteCustomFeed(feedId) {
+  const idx = customFeeds.findIndex(f => f.id === feedId)
+  if (idx >= 0) customFeeds.splice(idx, 1)
+}
+
+function editCustomFeed(feedId, name, description, selectedTopics, selectedUsers) {
+  const feed = customFeeds.find(f => f.id === feedId)
+  if (feed) {
+    feed.name = name
+    feed.description = description
+    feed.topics = selectedTopics
+    feed.users = selectedUsers
+  }
+}
+
+const storeObject = {
     currentUser,
     users,
     topics,
@@ -1142,5 +1189,25 @@ export function useThreadsStore() {
     markAllNotificationsRead,
     markNotificationRead,
     pushNotification
+}
+
+const storeProxy = new Proxy(storeObject, {
+  get(target, prop, receiver) {
+    const val = Reflect.get(target, prop, receiver)
+    if (isRef(val)) {
+      return val.value
+    }
+    return val
+  },
+  set(target, prop, value, receiver) {
+    if (prop in target && isRef(target[prop])) {
+      target[prop].value = value
+      return true
+    }
+    return Reflect.set(target, prop, value, receiver)
   }
+})
+
+export function useThreadsStore() {
+  return storeProxy
 }

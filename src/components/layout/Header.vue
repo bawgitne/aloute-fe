@@ -1,9 +1,9 @@
 <template>
-  <header class="social-header">
+  <header class="social-header" ref="headerRef">
     <div class="header-container">
       <!-- Left: Brand Logo & Search -->
       <div class="header-left">
-        <a href="#" class="brand-logo" @click.prevent="activeTab = 'feed'">
+        <a href="/" class="brand-logo" @click.prevent="goToMainPage">
           <div class="logo-icon">
             <i class="fa-solid fa-rocket"></i>
           </div>
@@ -81,7 +81,7 @@
           <button
             class="nav-tab"
             :class="{ active: store.activeTab === 'feed' }"
-            @click="store.activeTab = 'feed'"
+            @click="navigateTo('/')"
             title="Home Feed"
           >
             <i class="fa-solid fa-house"></i>
@@ -90,36 +90,26 @@
 
           <button
             class="nav-tab"
+            :class="{ active: store.activeTab === 'friends' }"
+            @click="navigateTo('/friends?tab=following')"
+            title="Đang theo dõi & Đề xuất kết nối"
+          >
+            <i class="fa-solid fa-user-check"></i>
+            <span class="nav-label">Following</span>
+          </button>
+
+          <button
+            class="nav-tab"
             :class="{ active: store.activeTab === 'communities' }"
-            @click="store.activeTab = 'communities'"
+            @click="navigateTo('/communities')"
             title="Communities"
           >
             <i class="fa-solid fa-users-rectangle"></i>
             <span class="nav-label">Cộng đồng</span>
           </button>
-
-          <button
-            class="nav-tab"
-            :class="{ active: store.activeTab === 'analytics' }"
-            @click="store.activeTab = 'analytics'"
-            title="Thống kê"
-          >
-            <i class="fa-solid fa-chart-line"></i>
-            <span class="nav-label">Phân tích</span>
-          </button>
-
-          <button
-            class="nav-tab"
-            :class="{ active: store.activeTab === 'moderation' }"
-            @click="store.activeTab = 'moderation'"
-            title="Safety & Moderation"
-          >
-            <i class="fa-solid fa-shield-halved"></i>
-            <span class="nav-label">An toàn</span>
-          </button>
         </nav>
 
-        <!-- Right: Friends, Notifications, Settings & Profile / Auth -->
+        <!-- Right: Friends, Messages, Notifications, Settings & Profile / Auth -->
         <div class="header-right">
           <!-- Login / Auth Button if Guest -->
           <button
@@ -134,10 +124,21 @@
           <button
             class="btn-icon"
             :class="{ active: store.activeTab === 'friends' }"
-            @click="store.activeTab = 'friends'"
+            @click="navigateTo('/friends')"
             title="Friends & Connections"
           >
             <i class="fa-solid fa-user-group"></i>
+          </button>
+
+          <!-- Messages Icon Button -->
+          <button
+            class="btn-icon"
+            :class="{ active: store.activeTab === 'messages' || store.isChatDrawerOpen }"
+            @click="toggleMessages"
+            title="Direct Messages & Chat Drawer"
+          >
+            <i class="fa-regular fa-paper-plane"></i>
+            <span v-if="store.totalUnreadCount" class="badge-dot warning"></span>
           </button>
 
           <!-- Notification Bell Action Button -->
@@ -155,7 +156,7 @@
             <div v-if="showNotifMenu" class="popover-dropdown notifications-dropdown card-social">
               <div class="notif-popover-header">
                 <h3>Thông báo</h3>
-                <button class="btn-link-sm" @click="store.markAllNotificationsRead">
+                <button class="btn-link-sm" @click="store.markAllNotificationsRead()">
                   <i class="fa-solid fa-check-double"></i> Đọc tất cả
                 </button>
               </div>
@@ -238,6 +239,59 @@
                 </label>
               </div>
 
+              <!-- 3 Layout Display Modes (Popup, Right Sidebar, Left Split) -->
+              <div class="setting-option-column" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">
+                  <i class="fa-solid fa-table-columns text-indigo-400"></i> Giao diện hiển thị bình luận
+                </span>
+                <div class="mode-toggle-group" style="display: flex; gap: 4px;">
+                  <button
+                    class="mode-btn flex-1 text-center"
+                    :class="{ active: store.commentDisplayMode === 'popup' }"
+                    @click="store.commentDisplayMode = 'popup'"
+                    title="Bình luận dạng Cửa sổ Popup"
+                  >
+                    Popup
+                  </button>
+                  <button
+                    class="mode-btn flex-1 text-center"
+                    :class="{ active: store.commentDisplayMode === 'sidebar' }"
+                    @click="store.commentDisplayMode = 'sidebar'"
+                    title="Bình luận ở Cột Phải"
+                  >
+                    Cột Phải
+                  </button>
+                  <button
+                    class="mode-btn flex-1 text-center"
+                    :class="{ active: store.commentDisplayMode === 'left_comments' }"
+                    @click="store.commentDisplayMode = 'left_comments'"
+                    title="Bình luận ở Cột Trái (Left Split)"
+                  >
+                    Cột Trái
+                  </button>
+                </div>
+              </div>
+
+              <!-- Saved / Bookmarks Option -->
+              <div class="setting-option-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                <button
+                  @click="navigateTo('/saved'); showSettingsMenu = false"
+                  class="flex items-center gap-2 text-xs text-amber-400 font-bold hover:underline"
+                >
+                  <i class="fa-solid fa-bookmark"></i> Bài viết đã lưu (Bookmarks)
+                </button>
+              </div>
+
+              <!-- Safety & Moderation Option -->
+              <div class="setting-option-row" style="margin-top: 6px; border-top: 1px solid var(--border-color); padding-top: 6px;">
+                <button
+                  @click="navigateTo('/moderation'); showSettingsMenu = false"
+                  class="flex items-center gap-2 text-xs text-indigo-400 font-bold hover:underline"
+                >
+                  <i class="fa-solid fa-shield-halved"></i> An toàn & Kiểm duyệt (Moderation)
+                </button>
+              </div>
+
               <div v-if="store.isLoggedIn" class="setting-option-row" style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
                 <button @click="store.isLoggedIn = false; showSettingsMenu = false" class="text-xs text-red-400 font-bold hover:underline">
                   <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
@@ -259,11 +313,24 @@
   </template>
 
   <script setup>
-  import { ref, computed } from 'vue'
+  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { useRouter } from 'vue-router'
   import { useThreadsStore } from '@/composables/useThreadsStore'
 
   const store = useThreadsStore()
+  const router = useRouter()
 
+  function navigateTo(path) {
+    router.push(path)
+  }
+
+  function goToMainPage() {
+    store.activeTab = 'feed'
+    store.activeFeedFilter = 'home'
+    router.push('/')
+  }
+
+  const headerRef = ref(null)
   const searchQuery = ref('')
   const showSearchResults = ref(false)
   const showSettingsMenu = ref(false)
@@ -271,6 +338,22 @@
   const notifFilter = ref('all')
 
   const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+
+  function handleClickOutside(event) {
+    if (headerRef.value && !headerRef.value.contains(event.target)) {
+      showSearchResults.value = false
+      showNotifMenu.value = false
+      showSettingsMenu.value = false
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('click', handleClickOutside)
+  })
+
+  onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+  })
 
   const unreadNotifsCount = computed(() => store.notifications.filter(n => !n.is_read).length)
 
@@ -307,6 +390,13 @@
     const q = searchQuery.value.toLowerCase()
     return store.posts.filter(p => p.content && p.content.toLowerCase().includes(q)).slice(0, 5)
   })
+
+  function toggleMessages() {
+    store.isChatDrawerOpen = !store.isChatDrawerOpen
+    if (store.isChatDrawerOpen) {
+      store.chatDrawerSubView = 'list'
+    }
+  }
 
   function toggleNotifMenu() {
     showNotifMenu.value = !showNotifMenu.value
@@ -354,36 +444,36 @@
   }
 
   function selectTopicSearch(name) {
-    store.activeFeedFilter = `topic_${name}`
-    store.activeTab = 'feed'
+    router.push(`/topic/${name}`)
     showSearchResults.value = false
     searchQuery.value = ''
   }
 
   function selectUserSearch(user) {
     store.selectedProfileUser = user
-    store.activeTab = 'profile'
+    router.push(`/profile/${user.username}`)
     showSearchResults.value = false
     searchQuery.value = ''
   }
 
   function selectCommunitySearch(comm) {
     store.selectedCommunity = comm
-    store.activeTab = 'community_detail'
+    router.push(`/c/${comm.slug}`)
     showSearchResults.value = false
     searchQuery.value = ''
   }
 
   function selectPostSearch(post) {
     store.selectedPostForComments = post
-    store.activeTab = 'feed'
+    store.isPostDetailModalOpen = true
+    router.push('/')
     showSearchResults.value = false
     searchQuery.value = ''
   }
 
   function openMyProfile() {
     store.selectedProfileUser = store.currentUser
-    store.activeTab = 'profile'
+    router.push('/profile')
   }
   </script>
 
@@ -453,17 +543,17 @@
 
 .header-search {
   position: relative;
-  width: 240px;
+  width: 320px;
 }
 
 .header-search input {
   width: 100%;
-  padding: 8px 14px 8px 34px;
-  border-radius: var(--radius-pill);
+  padding: 10px 16px 10px 38px;
+  border-radius: 12px;
   border: 1px solid var(--border-color-darker);
   background: var(--bg-surface-secondary);
   color: var(--text-main);
-  font-size: 12px;
+  font-size: 13px;
   outline: none;
   transition: all 0.2s ease;
 }
@@ -475,18 +565,19 @@
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .search-dropdown {
   position: absolute;
   top: 115%;
   left: 0;
-  width: 300px;
+  width: 100%;
+  min-width: 320px;
   max-height: 320px;
   overflow-y: auto;
   z-index: 105;

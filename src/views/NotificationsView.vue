@@ -80,12 +80,13 @@
 import { ref, computed } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const { notifications } = useThreadsStore()
+const store = useThreadsStore()
 const currentTab = ref('ALL')
 
 const filteredNotifs = computed(() => {
-  if (currentTab.value === 'ALL') return notifications
-  return notifications.filter(n => n.type === currentTab.value)
+  const notifs = store.notifications || []
+  if (currentTab.value === 'ALL') return notifs
+  return notifs.filter(n => n.type === currentTab.value)
 })
 
 function getNotifIcon(type) {
@@ -97,7 +98,7 @@ function getNotifIcon(type) {
 }
 
 function markAllRead() {
-  notifications.forEach(n => (n.is_read = true))
+  (store.notifications || []).forEach(n => (n.is_read = true))
 }
 </script>
 

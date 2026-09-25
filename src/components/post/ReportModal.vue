@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isReportModalOpen" class="modal-overlay" @click.self="closeModal">
+  <div v-if="store.isReportModalOpen" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <div class="modal-header">
         <h3><i class="fa-solid fa-flag text-danger"></i> Report Content</h3>
@@ -50,7 +50,7 @@
 import { ref } from 'vue'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const { isReportModalOpen, submitReport } = useThreadsStore()
+const store = useThreadsStore()
 
 const selectedReason = ref('SPAM')
 const description = ref('')
@@ -65,11 +65,11 @@ const reasons = [
 ]
 
 function closeModal() {
-  isReportModalOpen.value = false
+  store.isReportModalOpen = false
 }
 
 function submit() {
-  submitReport(selectedReason.value, description.value)
+  store.submitReport(selectedReason.value, description.value)
   description.value = ''
 }
 </script>

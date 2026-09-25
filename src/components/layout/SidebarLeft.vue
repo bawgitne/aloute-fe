@@ -1,33 +1,33 @@
 <template>
   <aside class="sidebar-left">
     <!-- MODE 1: Left-Comments Mode (Frameless Pure Content with Dividers & Tight Spacing) -->
-    <template v-if="commentDisplayMode === 'left_comments'">
+    <template v-if="store.commentDisplayMode === 'left_comments'">
       <div class="frameless-sidebar-content">
         <!-- Section 1: Profile Mini Card -->
-        <div v-if="showMiniProfileCard" class="sidebar-section profile-section" @click="openProfile">
+        <div v-if="store.showMiniProfileCard" class="sidebar-section profile-section" @click="openProfile">
           <div class="mini-card-header">
-            <img :src="currentUser.cover" class="mini-cover" />
-            <img :src="currentUser.avatar" class="avatar avatar-lg mini-avatar" />
+            <img :src="store.currentUser.cover" class="mini-cover" />
+            <img :src="store.currentUser.avatar" class="avatar avatar-lg mini-avatar" />
           </div>
           <div class="mini-card-body">
             <div class="user-name">
-              {{ currentUser.display_name }}
-              <i v-if="currentUser.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
+              {{ store.currentUser.display_name }}
+              <i v-if="store.currentUser.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
             </div>
-            <div class="user-handle">@{{ currentUser.username }}</div>
+            <div class="user-handle">@{{ store.currentUser.username }}</div>
             <div class="user-stats">
               <div class="stat-item">
-                <strong>{{ currentUser.posts_count }}</strong>
+                <strong>{{ store.currentUser.posts_count }}</strong>
                 <span>Posts</span>
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
-                <strong>{{ currentUser.followers_count }}</strong>
+                <strong>{{ store.currentUser.followers_count }}</strong>
                 <span>Followers</span>
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
-                <strong>{{ currentUser.following_count }}</strong>
+                <strong>{{ store.currentUser.following_count }}</strong>
                 <span>Following</span>
               </div>
             </div>
@@ -41,7 +41,7 @@
         <div class="sidebar-section topics-section">
           <div class="topics-list">
             <div
-              v-for="topic in topics"
+              v-for="topic in store.topics"
               :key="topic.id"
               class="topic-item"
               @click="selectTopic(topic.name)"
@@ -84,33 +84,46 @@
     <!-- MODE 2: Standard Modes (Side Panel Right or Popup - 3 Separate Cards) -->
     <template v-else>
       <!-- Option Show/Hide Mini Profile Card -->
-      <div v-if="showMiniProfileCard" class="card-social profile-mini-card" @click="openProfile">
+      <div v-if="store.showMiniProfileCard" class="card-social profile-mini-card" @click="openProfile">
         <div class="mini-card-header">
-          <img :src="currentUser.cover" class="mini-cover" />
-          <img :src="currentUser.avatar" class="avatar avatar-lg mini-avatar" />
+          <img :src="store.currentUser.cover" class="mini-cover" />
+          <img :src="store.currentUser.avatar" class="avatar avatar-lg mini-avatar" />
         </div>
         <div class="mini-card-body">
           <div class="user-name">
-            {{ currentUser.display_name }}
-            <i v-if="currentUser.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
+            {{ store.currentUser.display_name }}
+            <i v-if="store.currentUser.is_verified" class="fa-solid fa-circle-check verified-icon"></i>
           </div>
-          <div class="user-handle">@{{ currentUser.username }}</div>
+          <div class="user-handle">@{{ store.currentUser.username }}</div>
           <div class="user-stats">
             <div class="stat-item">
-              <strong>{{ currentUser.posts_count }}</strong>
+              <strong>{{ store.currentUser.posts_count }}</strong>
               <span>Posts</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-              <strong>{{ currentUser.followers_count }}</strong>
+              <strong>{{ store.currentUser.followers_count }}</strong>
               <span>Followers</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-              <strong>{{ currentUser.following_count }}</strong>
+              <strong>{{ store.currentUser.following_count }}</strong>
               <span>Following</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Saved Posts Quick Shortcut -->
+      <div class="card-social widget-card cursor-pointer hover:border-amber-400/60 transition" @click="router.push('/saved')" style="padding: 10px 14px;">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 text-xs font-bold text-main">
+            <i class="fa-solid fa-bookmark text-amber-400"></i>
+            <span>Bookmarks (Đã lưu)</span>
+          </div>
+          <span class="text-[11px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">
+            {{ store.posts.filter(p => p.is_bookmarked).length }}
+          </span>
         </div>
       </div>
 
@@ -121,7 +134,7 @@
         </div>
         <div class="widget-body">
           <div
-            v-for="topic in topics"
+            v-for="topic in store.topics"
             :key="topic.id"
             class="topic-item"
             @click="selectTopic(topic.name)"
@@ -139,7 +152,7 @@
       <div class="card-social widget-card">
         <div class="widget-header">
           <h3><i class="fa-solid fa-users text-success"></i> Your Communities</h3>
-          <button class="btn-link" @click="activeTab = 'communities'">All</button>
+          <button class="btn-link" @click="store.activeTab = 'communities'">All</button>
         </div>
         <div class="widget-body">
           <div
@@ -165,35 +178,26 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  currentUser,
-  topics,
-  communities,
-  showMiniProfileCard,
-  commentDisplayMode,
-  activeTab,
-  activeFeedFilter,
-  selectedCommunity,
-  selectedProfileUser
-} = useThreadsStore()
+const store = useThreadsStore()
+const router = useRouter()
 
-const joinedCommunities = computed(() => communities.filter(c => c.is_joined))
+const joinedCommunities = computed(() => store.communities.filter(c => c.is_joined))
 
 function openProfile() {
-  selectedProfileUser.value = currentUser
-  activeTab.value = 'profile'
+  store.selectedProfileUser = store.currentUser
+  router.push('/profile')
 }
 
 function selectTopic(name) {
-  activeFeedFilter.value = `topic_${name}`
-  activeTab.value = 'feed'
+  router.push(`/topic/${name}`)
 }
 
 function openCommunity(comm) {
-  selectedCommunity.value = comm
-  activeTab.value = 'community_detail'
+  store.selectedCommunity = comm
+  router.push(`/c/${comm.slug}`)
 }
 </script>
 
@@ -424,6 +428,22 @@ function openCommunity(comm) {
 
 .text-warning { color: var(--warning-color); }
 .text-success { color: var(--success-color); }
+
+.avatar-relative {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border: 1.5px solid var(--bg-surface);
+  border-radius: 50%;
+}
 
 @media (max-width: 900px) {
   .sidebar-left {

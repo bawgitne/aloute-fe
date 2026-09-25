@@ -4,11 +4,11 @@
     <div class="card-social widget-card">
       <div class="widget-header">
         <h3><i class="fa-solid fa-circle text-success font-10"></i> Active Conversations</h3>
-        <button class="btn-link" @click="activeTab = 'messages'">Open DM</button>
+        <button class="btn-link" @click="store.activeTab = 'messages'">Open DM</button>
       </div>
       <div class="widget-body">
         <div
-          v-for="conv in conversations"
+          v-for="conv in store.conversations"
           :key="conv.id"
           class="chat-shortcut-item"
           @click="openChat(conv)"
@@ -29,11 +29,11 @@
     <div class="card-social widget-card">
       <div class="widget-header">
         <h3><i class="fa-solid fa-users text-primary"></i> Suggested Communities</h3>
-        <button class="btn-link" @click="activeTab = 'communities'">See all</button>
+        <button class="btn-link" @click="store.activeTab = 'communities'">See all</button>
       </div>
       <div class="widget-body">
         <div
-          v-for="comm in communities"
+          v-for="comm in store.communities"
           :key="comm.id"
           class="community-item"
         >
@@ -45,7 +45,7 @@
           <button
             class="btn-sm"
             :class="comm.is_joined ? 'btn-outline' : 'btn-primary'"
-            @click="comm.is_joined ? leaveCommunity(comm) : joinCommunity(comm)"
+            @click="comm.is_joined ? store.leaveCommunity(comm) : store.joinCommunity(comm)"
           >
             {{ comm.is_joined ? 'Joined' : 'Join' }}
           </button>
@@ -56,27 +56,20 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const {
-  communities,
-  conversations,
-  activeTab,
-  selectedCommunity,
-  selectedConversation,
-  isChatDrawerOpen,
-  joinCommunity,
-  leaveCommunity
-} = useThreadsStore()
+const store = useThreadsStore()
+const router = useRouter()
 
 function openCommunity(comm) {
-  selectedCommunity.value = comm
-  activeTab.value = 'community_detail'
+  store.selectedCommunity = comm
+  router.push(`/c/${comm.slug}`)
 }
 
 function openChat(conv) {
-  selectedConversation.value = conv
-  isChatDrawerOpen.value = true
+  store.selectedConversation = conv
+  store.isChatDrawerOpen = true
 }
 </script>
 

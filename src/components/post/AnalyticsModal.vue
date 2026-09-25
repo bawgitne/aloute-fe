@@ -1,39 +1,39 @@
 <template>
-  <div v-if="isAnalyticsModalOpen" class="modal-overlay" @click.self="closeModal">
+  <div v-if="store.isAnalyticsModalOpen" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <div class="modal-header">
         <h3><i class="fa-solid fa-chart-line text-primary"></i> Thread Analytics</h3>
         <button class="btn-icon btn-sm" @click="closeModal"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div v-if="analyticsTargetPost" class="modal-body">
+      <div v-if="store.analyticsTargetPost" class="modal-body">
         <div class="post-preview-snippet">
-          <p class="truncate-preview">"{{ analyticsTargetPost.content }}"</p>
-          <small class="text-muted">Posted {{ analyticsTargetPost.created_at }}</small>
+          <p class="truncate-preview">"{{ store.analyticsTargetPost.content }}"</p>
+          <small class="text-muted">Posted {{ store.analyticsTargetPost.created_at }}</small>
         </div>
 
         <div class="analytics-grid">
           <div class="stat-card">
             <i class="fa-solid fa-eye text-primary"></i>
-            <div class="stat-value">{{ analyticsTargetPost.view_count || 1240 }}</div>
+            <div class="stat-value">{{ store.analyticsTargetPost.view_count || 1240 }}</div>
             <div class="stat-title">Total Views</div>
           </div>
 
           <div class="stat-card">
             <i class="fa-solid fa-arrow-pointer text-success"></i>
-            <div class="stat-value">{{ analyticsTargetPost.link_clicks_count || 85 }}</div>
+            <div class="stat-value">{{ store.analyticsTargetPost.link_clicks_count || 85 }}</div>
             <div class="stat-title">Link Clicks</div>
           </div>
 
           <div class="stat-card">
             <i class="fa-solid fa-heart text-danger"></i>
-            <div class="stat-value">{{ analyticsTargetPost.like_count }}</div>
+            <div class="stat-value">{{ store.analyticsTargetPost.like_count }}</div>
             <div class="stat-title">Likes Received</div>
           </div>
 
           <div class="stat-card">
             <i class="fa-solid fa-retweet text-warning"></i>
-            <div class="stat-value">{{ analyticsTargetPost.repost_count + analyticsTargetPost.quote_count }}</div>
+            <div class="stat-value">{{ store.analyticsTargetPost.repost_count + store.analyticsTargetPost.quote_count }}</div>
             <div class="stat-title">Reposts & Quotes</div>
           </div>
         </div>
@@ -62,18 +62,18 @@
 <script setup>
 import { useThreadsStore } from '@/composables/useThreadsStore'
 
-const { isAnalyticsModalOpen, analyticsTargetPost } = useThreadsStore()
+const store = useThreadsStore()
 
 function closeModal() {
-  isAnalyticsModalOpen.value = false
+  store.isAnalyticsModalOpen = false
 }
 
 function calculateEngagement() {
-  if (!analyticsTargetPost.value) return 4.2
-  const totalEng = (analyticsTargetPost.value.like_count || 0) +
-                   (analyticsTargetPost.value.reply_count || 0) +
-                   (analyticsTargetPost.value.repost_count || 0)
-  const views = analyticsTargetPost.value.view_count || 100
+  if (!store.analyticsTargetPost) return 4.2
+  const totalEng = (store.analyticsTargetPost.like_count || 0) +
+                   (store.analyticsTargetPost.reply_count || 0) +
+                   (store.analyticsTargetPost.repost_count || 0)
+  const views = store.analyticsTargetPost.view_count || 100
   return ((totalEng / views) * 100).toFixed(1)
 }
 </script>

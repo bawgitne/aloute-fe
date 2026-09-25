@@ -13,7 +13,7 @@
     <!-- Main Comment Composer Input -->
     <div class="composer-box">
       <div class="input-wrapper">
-        <img :src="currentUser.avatar" class="avatar avatar-sm" />
+        <img :src="store.currentUser.avatar" class="avatar avatar-sm" />
         <div class="input-relative">
           <input
             type="text"
@@ -128,27 +128,27 @@ const props = defineProps({
   post: { type: Object, default: null }
 })
 
-const { currentUser, selectedPostForComments, addReply } = useThreadsStore()
+const store = useThreadsStore()
 
 const commentText = ref('')
 const activeInlineReplyId = ref(null)
 const inlineReplyText = ref('')
 
 function closePanel() {
-  selectedPostForComments.value = null
+  store.selectedPostForComments = null
 }
 
 function handleReply() {
   if (!commentText.value.trim() || !props.post) return
   const newReply = {
     id: `reply_${Date.now()}`,
-    user_id: currentUser.id,
+    user_id: store.currentUser.id,
     user: {
-      id: currentUser.id,
-      name: currentUser.display_name,
-      username: currentUser.username,
-      avatar: currentUser.avatar,
-      is_verified: currentUser.is_verified
+      id: store.currentUser.id,
+      name: store.currentUser.display_name,
+      username: store.currentUser.username,
+      avatar: store.currentUser.avatar,
+      is_verified: store.currentUser.is_verified
     },
     content: commentText.value.trim(),
     parent_post_id: props.post.id,
@@ -209,13 +209,13 @@ function handleInlineReplySubmit(parentReply) {
 
   const newReply = {
     id: `reply_${Date.now()}`,
-    user_id: currentUser.id,
+    user_id: store.currentUser.id,
     user: {
-      id: currentUser.id,
-      name: currentUser.display_name,
-      username: currentUser.username,
-      avatar: currentUser.avatar,
-      is_verified: currentUser.is_verified
+      id: store.currentUser.id,
+      name: store.currentUser.display_name,
+      username: store.currentUser.username,
+      avatar: store.currentUser.avatar,
+      is_verified: store.currentUser.is_verified
     },
     content: `@${parentReply.user.username} ${inlineReplyText.value.trim()}`,
     parent_post_id: props.post.id,
